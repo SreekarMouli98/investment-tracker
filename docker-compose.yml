@@ -2,6 +2,16 @@ version: "3.7"
 
 services:
 
+  frontend:
+    build:
+      context: frontend/.
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/src:/code/frontend/src
+      - ./frontend/public:/code/frontend/public
+
   backend:
     build:
       context: .
