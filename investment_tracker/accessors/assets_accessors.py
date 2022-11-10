@@ -1,4 +1,20 @@
-from investment_tracker.models.assets_models import AssetsModel
+from investment_tracker.models.assets_models import AssetClassesModel, AssetsModel
+
+
+class AssetClassesAccessor:
+    def get_asset_classes(self):
+        qs = AssetClassesModel.objects.all()
+        return list(qs)
+
+    def get_asset_class_by_id(self, asset_class_id):
+        return AssetClassesModel.objects.get(id=asset_class_id)
+
+    def persist(self, asset_class):
+        asset_class.save()
+        return asset_class
+
+    def update_asset_class(self, asset_class_id, **updates):
+        return AssetClassesModel.objects.filter(id=asset_class_id).update(**updates)
 
 
 class AssetsAccessor:
