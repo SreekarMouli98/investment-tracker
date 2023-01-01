@@ -1,6 +1,23 @@
 import { createContext, useContext } from "react";
+import { action, makeObservable, observable } from "mobx";
 
-class AppStore {}
+class AppStore {
+  assetClasses = [];
+  countries = [];
+
+  constructor() {
+    makeObservable(this, {
+      assetClasses: observable,
+      countries: observable,
+      setSeedData: action,
+    });
+  }
+
+  setSeedData = (data) => {
+    this.assetClasses = data?.assetClasses || [];
+    this.countries = data?.countries || [];
+  };
+}
 
 const defaultValue = new AppStore();
 
