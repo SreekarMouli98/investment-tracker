@@ -1,0 +1,12 @@
+.app-sidebar {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  height: 100%;
+  background: #181818 !important;
+  z-index: 2;
+}
+
+.app-sidebar-menu {
+  background: transparent !important;
+}

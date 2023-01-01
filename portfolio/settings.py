@@ -16,6 +16,16 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+#####
+# TEMPORARY LOGIC TO BYPASS GRAPHENE ISSUE
+# https://stackoverflow.com/questions/70382084/import-error-force-text-from-django-utils-encoding
+#####
+import django
+from django.utils.encoding import force_str
+
+django.utils.encoding.force_text = force_str
+#####
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -92,6 +102,14 @@ DATABASES = {
 }
 
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("CACHE_LOCATION"),
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
@@ -144,4 +162,8 @@ REST_FRAMEWORK = {
         "djangorestframework_camel_case.parser.CamelCaseMultiPartParser",
         "djangorestframework_camel_case.parser.CamelCaseJSONParser",
     ),
+}
+
+GRAPHENE = {
+    "SCHEMA": "portfolio.schema.schema",
 }
