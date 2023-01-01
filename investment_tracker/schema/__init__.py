@@ -1,2 +1,2 @@
 from .assets_schema import *
-from .counties_schema import *
+from .countries_schema import *

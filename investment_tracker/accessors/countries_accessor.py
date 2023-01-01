@@ -1,4 +1,4 @@
-from investment_tracker.models.counties_models import CountriesModel
+from investment_tracker.models.countries_models import CountriesModel
 
 
 class CountriesAccessor:

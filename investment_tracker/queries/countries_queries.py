@@ -1,6 +1,6 @@
 import graphene
 
-from investment_tracker.schema.counties_schema import CountriesType
+from investment_tracker.schema.countries_schema import CountriesType
 from investment_tracker.accessors.countries_accessor import CountriesAccessor
 
 

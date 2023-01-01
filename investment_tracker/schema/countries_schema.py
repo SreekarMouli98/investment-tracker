@@ -1,6 +1,6 @@
 from graphene_django.types import DjangoObjectType
 
-from investment_tracker.models.counties_models import CountriesModel
+from investment_tracker.models.countries_models import CountriesModel
 
 
 class CountriesType(DjangoObjectType):

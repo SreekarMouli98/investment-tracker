@@ -49,15 +49,16 @@ class DeleteAssetClassMutation(graphene.Mutation):
 
 class CreateAssetMutation(graphene.Mutation):
     class Arguments:
-        identity = graphene.String(required=True)
+        name = graphene.String(required=True)
+        ticker = graphene.String(required=True)
         asset_class = graphene.Int(required=True)
-        origin = graphene.Int(required=False, default_value=-1)
+        country = graphene.Int(required=False, default_value=-1)
 
     asset = graphene.Field(AssetsType)
 
-    def mutate(self, info, identity, asset_class, origin):
-        origin = None if origin == -1 else origin
-        asset = AssetsModel(identity=identity, asset_class_id=asset_class, origin_id=origin)
+    def mutate(self, info, name, ticker, asset_class, country):
+        country = None if country == -1 else country
+        asset = AssetsModel(name=name, ticker=ticker, asset_class_id=asset_class, country_id=country)
         asset = AssetsAccessor().persist(asset)
         return CreateAssetMutation(asset=asset)
 
@@ -65,16 +66,19 @@ class CreateAssetMutation(graphene.Mutation):
 class UpdateAssetMutation(graphene.Mutation):
     class Arguments:
         asset_id = graphene.ID(required=True)
-        identity = graphene.String(required=True)
+        name = graphene.String(required=True)
+        ticker = graphene.String(required=True)
         asset_class = graphene.Int(required=True)
-        origin = graphene.Int(required=True)
+        country = graphene.Int(required=True)
 
     ok = graphene.Boolean()
 
-    def mutate(self, info, asset_id, identity, asset_class, origin):
-        if not identity:
-            raise GraphQLError("Invalid identity!")
-        AssetsAccessor().update_asset(asset_id, identity=identity, asset_class_id=asset_class, origin_id=origin)
+    def mutate(self, info, asset_id, name, ticker, asset_class, country):
+        if not name or not ticker:
+            raise GraphQLError("Invalid name!")
+        AssetsAccessor().update_asset(
+            asset_id, name=name, ticker=ticker, asset_class_id=asset_class, country_id=country
+        )
         return UpdateAssetMutation(ok=True)
 
 
