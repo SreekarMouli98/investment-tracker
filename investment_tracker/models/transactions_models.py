@@ -16,9 +16,7 @@ class TransactionsModel(models.Model):
         related_name="transactions_with_received",
     )
     receive_value = models.BigIntegerField(null=False)
-    created_at = models.DateTimeField(null=False)
-    knowledge_begin_date = models.DateTimeField(null=False)
-    knowledge_end_date = models.DateTimeField(null=True, blank=True)
+    transacted_at = models.DateTimeField(null=False)
 
     class Meta:
         db_table = "transactions"
