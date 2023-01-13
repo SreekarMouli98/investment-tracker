@@ -40,7 +40,6 @@ class AssetsAccessor:
             qs = qs.order_by(*order_by)
         if limit is not None and offset is not None:
             qs = qs[offset : offset + limit]
-        print(qs.query)
         return list(qs)
 
     def count_assets(self, asset_classes=None, countries=None, search_text=None):

@@ -1,4 +1,4 @@
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { observer } from "mobx-react-lite";
 import { debounce, isEmpty, map } from "lodash";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,14 +8,17 @@ import {
   Card,
   Checkbox,
   Col,
+  Form,
   Input,
   List,
+  Modal,
   Row,
+  Select,
   Spin,
   Tooltip,
 } from "antd";
 
-import { ASSETS } from "../../services";
+import { ASSETS, CREATE_ASSET } from "../../services";
 import { useAppStore } from "../../stores/AppStore";
 
 import "./style.css";
@@ -79,10 +82,15 @@ function AssetPicker({ selectedAsset, setSelectedAsset }) {
   const [pageNo, setPageNo] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchText, setSearchText] = useState("");
+  const [createAssetModalVisible, setCreateAssetModalVisibility] =
+    useState(false);
+  const [newAssetForm] = Form.useForm();
+  const [createAsset, { loading: createAssetLoading, data: createAssetRes }] =
+    useMutation(CREATE_ASSET);
 
   const onToggleFilters = () => setFiltersExpanded(!filtersExpanded);
 
-  const { loading, data } = useQuery(ASSETS, {
+  const { loading, data, refetch } = useQuery(ASSETS, {
     variables: {
       limit: LIMIT,
       offset: pageNo * LIMIT,
@@ -90,21 +98,54 @@ function AssetPicker({ selectedAsset, setSelectedAsset }) {
       countries: selectedCountries,
       searchText: searchText,
     },
+    notifyOnNetworkStatusChange: true,
   });
 
   useEffect(() => {
-    if (data) {
+    /**
+     * Set the assets list after receiving the graphql response for GET_ASSETS.
+     */
+    if (!loading && data) {
       setAssetsList([...assetsList, ...data?.assets]);
       if (assetsList.length + data?.assets?.length >= data?.assetsCount) {
         setHasMore(false);
       }
     }
-  }, [data]);
+  }, [loading, data]);
+
+  const onToggleCreateAssetModal = () => {
+    newAssetForm.resetFields();
+    setCreateAssetModalVisibility(!createAssetModalVisible);
+  };
 
   const resetList = () => {
     setAssetsList([]);
     setPageNo(0);
   };
+
+  useEffect(() => {
+    /**
+     * Reset & refetch the assets list after receiving the graphql response
+     * of CREATE_ASSET.
+     */
+    if (
+      !createAssetLoading &&
+      createAssetRes &&
+      createAssetRes?.createAsset?.asset
+    ) {
+      onToggleCreateAssetModal();
+      resetList();
+      refetch();
+    }
+  }, [
+    createAssetLoading,
+    createAssetRes,
+    pageNo,
+    selectedAssetClasses,
+    selectedCountries,
+    searchText,
+    refetch,
+  ]);
 
   const onSearch = (_searchText) => {
     resetList();
@@ -140,7 +181,96 @@ function AssetPicker({ selectedAsset, setSelectedAsset }) {
               />
             </Col>
             <Col xs={24}>
-              <br />
+              <Button
+                type="link"
+                onClick={onToggleCreateAssetModal}
+                className="create-new-asset-btn"
+              >
+                Create New
+              </Button>
+              <Modal
+                title="Create New Asset"
+                visible={createAssetModalVisible}
+                okText="Create"
+                okButtonProps={{ loading: createAssetLoading }}
+                onOk={() => newAssetForm.submit()}
+                onCancel={onToggleCreateAssetModal}
+              >
+                <Form
+                  labelCol={{ span: 6 }}
+                  wrapperCol={{ span: 18 }}
+                  form={newAssetForm}
+                  onFinish={(values) => createAsset({ variables: values })}
+                >
+                  <Form.Item
+                    label="Ticker"
+                    name="ticker"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please provide a ticker!",
+                      },
+                    ]}
+                  >
+                    <Input
+                      onInput={(e) =>
+                        (e.target.value = e.target.value
+                          .toUpperCase()
+                          .replace(/[^0-9a-z_-]+/gi, ""))
+                      }
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Name"
+                    name="name"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please provide a name!",
+                      },
+                    ]}
+                  >
+                    <Input />
+                  </Form.Item>
+                  <Form.Item
+                    label="Asset Class"
+                    name="assetClass"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select the asset class!",
+                      },
+                    ]}
+                  >
+                    <Select
+                      showSearch
+                      options={(appStore?.assetClasses || []).map(
+                        (assetClass) => ({
+                          label: assetClass?.name,
+                          value: assetClass?.id,
+                        })
+                      )}
+                      filterOption={(input, option) =>
+                        option.label.toLowerCase().includes(input.toLowerCase())
+                      }
+                    />
+                  </Form.Item>
+                  <Form.Item label="Country" name="country">
+                    <Select
+                      showSearch
+                      options={(appStore?.countries || []).map((country) => ({
+                        label: country?.name,
+                        value: country?.id,
+                      }))}
+                      filterOption={(input, option) =>
+                        option.label.toLowerCase().includes(input.toLowerCase())
+                      }
+                    />
+                  </Form.Item>
+                </Form>
+              </Modal>
+            </Col>
+            <Col xs={24}>
               <List
                 size="small"
                 bordered

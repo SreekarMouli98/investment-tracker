@@ -51,3 +51,23 @@ export const ASSETS = gql`
     )
   }
 `;
+
+export const CREATE_ASSET = gql`
+  mutation createAsset(
+    $ticker: String!
+    $name: String!
+    $assetClass: ID!
+    $country: ID
+  ) {
+    createAsset(
+      ticker: $ticker
+      name: $name
+      assetClass: $assetClass
+      country: $country
+    ) {
+      asset {
+        id
+      }
+    }
+  }
+`;

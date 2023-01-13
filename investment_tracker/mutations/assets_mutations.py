@@ -51,8 +51,8 @@ class CreateAssetMutation(graphene.Mutation):
     class Arguments:
         name = graphene.String(required=True)
         ticker = graphene.String(required=True)
-        asset_class = graphene.Int(required=True)
-        country = graphene.Int(required=False, default_value=-1)
+        asset_class = graphene.ID(required=True)
+        country = graphene.ID(required=False, default_value=-1)
 
     asset = graphene.Field(AssetsType)
 
@@ -68,8 +68,8 @@ class UpdateAssetMutation(graphene.Mutation):
         asset_id = graphene.ID(required=True)
         name = graphene.String(required=True)
         ticker = graphene.String(required=True)
-        asset_class = graphene.Int(required=True)
-        country = graphene.Int(required=True)
+        asset_class = graphene.ID(required=True)
+        country = graphene.ID(required=True)
 
     ok = graphene.Boolean()
 

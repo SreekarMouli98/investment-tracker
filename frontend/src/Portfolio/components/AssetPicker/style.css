@@ -40,3 +40,8 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.create-new-asset-btn {
+  font-style: italic;
+  padding: 30px 0px !important;
+}
