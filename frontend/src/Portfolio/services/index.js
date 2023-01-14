@@ -71,3 +71,33 @@ export const CREATE_ASSET = gql`
     }
   }
 `;
+
+export const GET_TRANSACTIONS = gql`
+  query getTransactions($limit: Int, $offset: Int) {
+    transactions(limit: $limit, offset: $offset) {
+      supplyAsset {
+        id
+        ticker
+        country {
+          id
+        }
+        assetClass {
+          id
+        }
+      }
+      supplyValue
+      receiveAsset {
+        id
+        ticker
+        country {
+          id
+        }
+        assetClass {
+          id
+        }
+      }
+      receiveValue
+      transactedAt
+    }
+  }
+`;
