@@ -8,11 +8,20 @@ function AssetValue({ assetClassId, countryId, value }) {
 
   const assetClass = appStore.getAssetClassById(assetClassId);
 
+  if (!assetClass) return <>?</>;
+
   const country = appStore.getCountryById(countryId) || {};
 
-  const fullValue = formatAssetValue(value, assetClass.name, country?.code);
+  const fullValue = formatAssetValue(
+    value,
+    assetClass.name,
+    country?.code,
+    assetClass.decimalPlaces
+  );
 
-  return <Tooltip title={fullValue}>{fullValue}</Tooltip>;
+  const shortValue = formatAssetValue(value, assetClass.name, country?.code);
+
+  return <Tooltip title={fullValue}>{shortValue}</Tooltip>;
 }
 
 export default AssetValue;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { useQuery } from "@apollo/client";
 import { get } from "lodash";
+import moment from "moment";
 
 import { GET_TRANSACTIONS } from "../../services";
 import AssetTag from "../AssetTag";
@@ -32,6 +33,8 @@ function LedgerTable() {
         value={params.value}
       />
     );
+
+  const dateRenderer = (params) => moment(params.value).format("DD MMM, YYYY");
 
   return (
     <div style={{ width: "1000px", height: "600px" }}>
@@ -66,6 +69,7 @@ function LedgerTable() {
             },
             {
               field: "transactedAt",
+              cellRenderer: dateRenderer,
             },
           ]}
           isRowSelectable={() => true}

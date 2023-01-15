@@ -1,20 +1,42 @@
 import { Tag } from "antd";
 
 import { useAppStore } from "../../stores/AppStore";
-import { generateHexFromString, invertColor } from "../../utils";
 
 function AssetTag({ ticker, assetClassId }) {
   const appStore = useAppStore();
 
   const assetClass = appStore.getAssetClassById(assetClassId) || {};
 
-  const tagColor = generateHexFromString(assetClass.name || "random-text");
-
-  const textColor = invertColor(tagColor);
+  let tagColor;
+  switch (assetClass.name) {
+    case "Currency":
+      tagColor = "green";
+      break;
+    case "Stock":
+      tagColor = "geekblue";
+      break;
+    case "Smallcase":
+      tagColor = "blue";
+      break;
+    case "Mutual Fund":
+      tagColor = "cyan";
+      break;
+    case "Crypto":
+      tagColor = "gold";
+      break;
+    case "Real Estate":
+      tagColor = "magenta";
+      break;
+    case "Bond":
+      tagColor = "lime";
+      break;
+    default:
+      break;
+  }
 
   return (
     <div>
-      <Tag color={tagColor} style={{ color: textColor, fontWeight: "bold" }}>
+      <Tag color={tagColor}>
         {assetClass.name} : {ticker}
       </Tag>
     </div>
