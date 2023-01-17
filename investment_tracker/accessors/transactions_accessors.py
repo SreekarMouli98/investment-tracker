@@ -21,3 +21,7 @@ class TransactionsAccessor:
 
     def update_transaction(self, transcation_id, **updates):
         return TransactionsModel.objects.filter(id=transcation_id).update(**updates)
+
+    def count_transactions(self):
+        qs = TransactionsModel.objects.filter()
+        return qs.count()

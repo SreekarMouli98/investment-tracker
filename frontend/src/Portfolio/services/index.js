@@ -72,7 +72,7 @@ export const CREATE_ASSET = gql`
   }
 `;
 
-export const GET_TRANSACTIONS = gql`
+export const GET_TRANSACTIONS_PAGINATED = gql`
   query getTransactions($limit: Int, $offset: Int) {
     transactions(limit: $limit, offset: $offset) {
       supplyAsset {
@@ -99,5 +99,6 @@ export const GET_TRANSACTIONS = gql`
       receiveValue
       transactedAt
     }
+    transactionsCount
   }
 `;
