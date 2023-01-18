@@ -75,6 +75,7 @@ export const CREATE_ASSET = gql`
 export const GET_TRANSACTIONS_PAGINATED = gql`
   query getTransactions($limit: Int, $offset: Int) {
     transactions(limit: $limit, offset: $offset) {
+      id
       supplyAsset {
         id
         ticker
@@ -100,5 +101,35 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       transactedAt
     }
     transactionsCount
+  }
+`;
+
+export const UPDATE_TRANSACTION = gql`
+  mutation updateTransaction(
+    $transactionId: ID!
+    $supplyAssetId: ID!
+    $supplyValue: Float!
+    $receiveAssetId: ID!
+    $receiveValue: Float!
+    $transactedAt: DateTime!
+  ) {
+    updateTransaction(
+      transactionId: $transactionId
+      supplyAssetId: $supplyAssetId
+      supplyValue: $supplyValue
+      receiveAssetId: $receiveAssetId
+      receiveValue: $receiveValue
+      transactedAt: $transactedAt
+    ) {
+      ok
+    }
+  }
+`;
+
+export const DELETE_TRANSACTION = gql`
+  mutation deleteTransaction($transactionId: ID!) {
+    deleteTransaction(transactionId: $transactionId) {
+      ok
+    }
   }
 `;

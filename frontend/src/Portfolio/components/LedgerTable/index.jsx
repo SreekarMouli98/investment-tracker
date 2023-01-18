@@ -1,19 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { get } from "lodash";
 import moment from "moment";
 import {
+  CloseOutlined,
+  DeleteOutlined,
   LeftOutlined,
   RightOutlined,
+  SaveOutlined,
   VerticalLeftOutlined,
   VerticalRightOutlined,
 } from "@ant-design/icons";
+import { observer } from "mobx-react-lite";
 
-import { GET_TRANSACTIONS_PAGINATED } from "../../services";
+import {
+  DELETE_TRANSACTION,
+  GET_TRANSACTIONS_PAGINATED,
+  UPDATE_TRANSACTION,
+} from "../../services";
 import AssetTag from "../AssetTag";
 import AssetValue from "../AssetValue";
-import { Button, Col, Input, Row, Space, Tooltip } from "antd";
+import { Button, Col, Input, Popconfirm, Row, Space, Tooltip } from "antd";
+import { LedgerTableStoreProvider, useLedgerTableStore } from "./store";
 
 const TRANSACTIONS_LIMIT = 15;
 
@@ -113,16 +122,20 @@ function Pagination({
   );
 }
 
-function LedgerTable() {
-  const [transactions, setTransactions] = useState([]);
+const LedgerTable = observer(() => {
   const [pageNo, setPageNo] = useState(0);
-  const { loading, data } = useQuery(GET_TRANSACTIONS_PAGINATED, {
+  const { loading, data, refetch } = useQuery(GET_TRANSACTIONS_PAGINATED, {
     variables: {
       limit: TRANSACTIONS_LIMIT,
       offset: pageNo * TRANSACTIONS_LIMIT,
     },
+    notifyOnNetworkStatusChange: true,
   });
+  const [updateTransaction] = useMutation(UPDATE_TRANSACTION);
+  const [deleteTransaction] = useMutation(DELETE_TRANSACTION);
   const transactionsTableRef = useRef();
+  const ledgerTableStore = useLedgerTableStore();
+  const { transactionsOfPage, setTransactions } = ledgerTableStore;
 
   useEffect(() => {
     if (loading) {
@@ -156,6 +169,107 @@ function LedgerTable() {
 
   const dateRenderer = (params) => moment(params.value).format("DD MMM, YYYY");
 
+  const actionsRenderer = (params) => {
+    if (params.data.isModified) {
+      return (
+        <>
+          <Popconfirm
+            placement="bottom"
+            title="Are you sure?"
+            okText="Yes"
+            onConfirm={() =>
+              updateTransaction({
+                variables: {
+                  transactionId: params.data.id,
+                  supplyAssetId: params.data.supplyAsset.id,
+                  supplyValue: params.data.supplyValue,
+                  receiveAssetId: params.data.receiveAsset.id,
+                  receiveValue: params.data.receiveValue,
+                  transactedAt: params.data.transactedAt,
+                },
+                onCompleted: (data) => {
+                  if (data && data?.updateTransaction?.ok) {
+                    ledgerTableStore.revertTransactionModification(
+                      params.data.id
+                    );
+                    refetch();
+                  }
+                },
+              })
+            }
+          >
+            <Tooltip title="Save changes">
+              <Button
+                icon={<SaveOutlined />}
+                shape="circle"
+                type="text"
+                style={{
+                  display: "inline-block",
+                }}
+              />
+            </Tooltip>
+          </Popconfirm>
+          <Popconfirm
+            placement="bottom"
+            title="Are you sure?"
+            okText="Yes"
+            onConfirm={() =>
+              ledgerTableStore.revertTransactionModification(params.data.id)
+            }
+          >
+            <Tooltip title="Revert changes">
+              <Button
+                icon={<CloseOutlined />}
+                shape="circle"
+                type="text"
+                style={{
+                  display: "inline-block",
+                }}
+                danger
+              />
+            </Tooltip>
+          </Popconfirm>
+        </>
+      );
+    } else {
+      return (
+        <Popconfirm
+          placement="bottom"
+          title="Are you sure?"
+          okText="Yes"
+          onConfirm={() =>
+            deleteTransaction({
+              variables: { transactionId: params.data.id },
+              onCompleted: (data) => {
+                if (data && data?.deleteTransaction?.ok) {
+                  ledgerTableStore.revertTransactionModification(
+                    params.data.id
+                  );
+                  refetch();
+                }
+              },
+            })
+          }
+        >
+          <Tooltip title="Delete transaction">
+            <Button
+              icon={<DeleteOutlined />}
+              shape="circle"
+              type="text"
+              style={{ display: "inline-block" }}
+            />
+          </Tooltip>
+        </Popconfirm>
+      );
+    }
+  };
+
+  const getRowStyle = (params) => {
+    if (params.data.isModified) {
+      return { backgroundColor: "rgb(0, 102, 255, 0.2)" };
+    }
+  };
+
   return (
     <div style={{ width: "1015px", height: "650px" }}>
       <div
@@ -164,33 +278,54 @@ function LedgerTable() {
       >
         <AgGridReact
           ref={transactionsTableRef}
-          rowData={transactions}
+          rowData={transactionsOfPage}
+          getRowStyle={getRowStyle}
           columnDefs={[
             {
               field: "supplyAsset",
               headerName: "Supplied Asset",
               cellRenderer: assetRenderer,
+              flex: 1,
             },
             {
               field: "supplyValue",
               headerName: "Supplied Value",
               cellRenderer: assetValueRenderer("supplyAsset"),
               type: "rightAligned",
+              editable: true,
+              valueSetter: (params) =>
+                ledgerTableStore.modifyTransaction(params.data.id, {
+                  supplyValue: parseFloat(params.newValue),
+                }),
+              flex: 1,
             },
             {
               field: "receiveAsset",
               headerName: "Received Asset",
               cellRenderer: assetRenderer,
+              flex: 1,
             },
             {
               field: "receiveValue",
               headerName: "Received Value",
               cellRenderer: assetValueRenderer("receiveAsset"),
               type: "rightAligned",
+              editable: true,
+              valueSetter: (params) =>
+                ledgerTableStore.modifyTransaction(params.data.id, {
+                  receiveValue: parseFloat(params.newValue),
+                }),
+              flex: 1,
             },
             {
               field: "transactedAt",
               cellRenderer: dateRenderer,
+              flex: 1,
+            },
+            {
+              headerName: "Actions",
+              cellRenderer: actionsRenderer,
+              flex: 1,
             },
           ]}
           isRowSelectable={() => true}
@@ -216,6 +351,14 @@ function LedgerTable() {
       </div>
     </div>
   );
+});
+
+function LedgerTableWrapper() {
+  return (
+    <LedgerTableStoreProvider>
+      <LedgerTable />
+    </LedgerTableStoreProvider>
+  );
 }
 
-export default LedgerTable;
+export default LedgerTableWrapper;
