@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { AgGridReact } from "ag-grid-react";
 import { useMutation, useQuery } from "@apollo/client";
 import { get } from "lodash";
@@ -21,10 +27,22 @@ import {
 } from "../../services";
 import AssetTag from "../AssetTag";
 import AssetValue from "../AssetValue";
-import { Button, Col, Input, Popconfirm, Row, Space, Tooltip } from "antd";
+import {
+  Button,
+  Col,
+  DatePicker,
+  Input,
+  Popconfirm,
+  Row,
+  Space,
+  Tooltip,
+} from "antd";
 import { LedgerTableStoreProvider, useLedgerTableStore } from "./store";
+import { normalizeDate } from "../../utils";
 
 const TRANSACTIONS_LIMIT = 15;
+
+const DATE_FORMAT = "MMM DD, YYYY";
 
 function Pagination({
   rowStart,
@@ -122,6 +140,48 @@ function Pagination({
   );
 }
 
+const DateEditor = forwardRef((props, ref) => {
+  const [value, setValue] = useState(moment(props.value));
+  const refInput = useRef(null);
+  const exitFnRef = useRef(null);
+
+  useEffect(() => {
+    refInput.current.focus();
+  }, []);
+
+  useImperativeHandle(ref, () => {
+    return {
+      getValue() {
+        return value.format();
+      },
+    };
+  });
+
+  const onChange = (date) => {
+    exitFnRef.current = exitFn;
+    setValue(date);
+  };
+
+  const exitFn = () => props.stopEditing();
+
+  useEffect(() => {
+    if (exitFnRef.current) {
+      exitFnRef.current();
+    }
+  }, [value]);
+
+  return (
+    <DatePicker
+      ref={refInput}
+      value={value}
+      format={DATE_FORMAT}
+      onChange={onChange}
+      open={true}
+      allowClear={false}
+    />
+  );
+});
+
 const LedgerTable = observer(() => {
   const [pageNo, setPageNo] = useState(0);
   const { loading, data, refetch } = useQuery(GET_TRANSACTIONS_PAGINATED, {
@@ -167,7 +227,7 @@ const LedgerTable = observer(() => {
       />
     );
 
-  const dateRenderer = (params) => moment(params.value).format("DD MMM, YYYY");
+  const dateRenderer = (params) => moment(params.value).format(DATE_FORMAT);
 
   const actionsRenderer = (params) => {
     if (params.data.isModified) {
@@ -320,6 +380,13 @@ const LedgerTable = observer(() => {
             {
               field: "transactedAt",
               cellRenderer: dateRenderer,
+              editable: true,
+              cellEditor: DateEditor,
+              cellEditorPopup: true,
+              valueSetter: (params) =>
+                ledgerTableStore.modifyTransaction(params.data.id, {
+                  transactedAt: normalizeDate(params.newValue),
+                }),
               flex: 1,
             },
             {
