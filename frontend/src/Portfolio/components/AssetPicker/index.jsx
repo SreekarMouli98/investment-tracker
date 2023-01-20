@@ -73,7 +73,7 @@ const FilterGroup = ({ groupName, options, selectedList, setSelectedList }) => {
   );
 };
 
-function AssetPicker({ selectedAsset, setSelectedAsset }) {
+function AssetPicker({ preselectedAsset, onChange, onCancel }) {
   const appStore = useAppStore();
   const [assetsList, setAssetsList] = useState([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -87,6 +87,7 @@ function AssetPicker({ selectedAsset, setSelectedAsset }) {
   const [newAssetForm] = Form.useForm();
   const [createAsset, { loading: createAssetLoading, data: createAssetRes }] =
     useMutation(CREATE_ASSET);
+  const [selectedAsset, setSelectedAsset] = useState(preselectedAsset);
 
   const onToggleFilters = () => setFiltersExpanded(!filtersExpanded);
 
@@ -323,10 +324,17 @@ function AssetPicker({ selectedAsset, setSelectedAsset }) {
         )}
         <Col xs={24}>
           <br />
-          <Button style={{ float: "right" }} disabled={isEmpty(selectedAsset)}>
-            Add
+          <Button
+            style={{ float: "right" }}
+            disabled={isEmpty(selectedAsset)}
+            onClick={() => onChange(selectedAsset)}
+            type="primary"
+          >
+            Select
           </Button>
-          <Button style={{ float: "right" }}>Cancel</Button>
+          <Button style={{ float: "right" }} onClick={onCancel}>
+            Cancel
+          </Button>
         </Col>
       </Row>
       <Tooltip

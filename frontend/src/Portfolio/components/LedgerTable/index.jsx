@@ -7,7 +7,7 @@ import {
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { useMutation, useQuery } from "@apollo/client";
-import { get } from "lodash";
+import { get, omit } from "lodash";
 import moment from "moment";
 import {
   CloseOutlined,
@@ -32,6 +32,7 @@ import {
   Col,
   DatePicker,
   Input,
+  Modal,
   Popconfirm,
   Row,
   Space,
@@ -39,6 +40,7 @@ import {
 } from "antd";
 import { LedgerTableStoreProvider, useLedgerTableStore } from "./store";
 import { normalizeDate } from "../../utils";
+import AssetPicker from "../AssetPicker";
 
 const TRANSACTIONS_LIMIT = 15;
 
@@ -179,6 +181,52 @@ const DateEditor = forwardRef((props, ref) => {
       open={true}
       allowClear={false}
     />
+  );
+});
+
+const AssetEditor = forwardRef((props, ref) => {
+  const [value, setValue] = useState(props.value);
+  const exitFnRef = useRef(null);
+
+  useImperativeHandle(ref, () => {
+    return {
+      getValue() {
+        return value;
+      },
+    };
+  });
+
+  const onChange = (newValue) => {
+    exitFnRef.current = exitFn;
+    setValue(newValue);
+  };
+
+  const exitFn = () => props.stopEditing();
+
+  useEffect(() => {
+    if (exitFnRef.current) {
+      exitFnRef.current();
+    }
+  }, [value]);
+
+  return (
+    <Modal
+      visible={true}
+      title="Pick Asset"
+      footer={null}
+      centered
+      width="auto"
+      bodyStyle={{
+        padding: "0px",
+      }}
+      onCancel={exitFn}
+    >
+      <AssetPicker
+        preselectedAsset={props.value}
+        onChange={onChange}
+        onCancel={exitFn}
+      />
+    </Modal>
   );
 });
 
@@ -345,6 +393,13 @@ const LedgerTable = observer(() => {
               field: "supplyAsset",
               headerName: "Supplied Asset",
               cellRenderer: assetRenderer,
+              editable: true,
+              cellEditor: AssetEditor,
+              cellEditorPopup: true,
+              valueSetter: (params) =>
+                ledgerTableStore.modifyTransaction(params.data.id, {
+                  supplyAsset: omit(params.newValue, ["name", "country"]),
+                }),
               flex: 1,
             },
             {
@@ -363,6 +418,13 @@ const LedgerTable = observer(() => {
               field: "receiveAsset",
               headerName: "Received Asset",
               cellRenderer: assetRenderer,
+              editable: true,
+              cellEditor: AssetEditor,
+              cellEditorPopup: true,
+              valueSetter: (params) =>
+                ledgerTableStore.modifyTransaction(params.data.id, {
+                  receiveAsset: omit(params.newValue, ["name", "country"]),
+                }),
               flex: 1,
             },
             {
