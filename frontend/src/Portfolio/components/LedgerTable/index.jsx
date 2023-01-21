@@ -7,7 +7,7 @@ import {
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { useMutation, useQuery } from "@apollo/client";
-import { get, omit } from "lodash";
+import { get, isEmpty, omit } from "lodash";
 import moment from "moment";
 import {
   CloseOutlined,
@@ -21,6 +21,7 @@ import {
 import { observer } from "mobx-react-lite";
 
 import {
+  CREATE_TRANSACTION,
   DELETE_TRANSACTION,
   GET_TRANSACTIONS_PAGINATED,
   UPDATE_TRANSACTION,
@@ -31,20 +32,187 @@ import {
   Button,
   Col,
   DatePicker,
+  Form,
   Input,
   Modal,
   Popconfirm,
   Row,
   Space,
   Tooltip,
+  Typography,
 } from "antd";
 import { LedgerTableStoreProvider, useLedgerTableStore } from "./store";
 import { normalizeDate } from "../../utils";
+import AssetPickerCard from "../AssetPickerCard";
 import AssetPicker from "../AssetPicker";
 
 const TRANSACTIONS_LIMIT = 15;
 
 const DATE_FORMAT = "MMM DD, YYYY";
+
+function Header({ onCreateTransaction }) {
+  const [createTransactionModalVisible, setCreateTransactionModalVisiblity] =
+    useState(false);
+  const [createTransactionForm] = Form.useForm();
+  const [createTransaction, { loading }] = useMutation(CREATE_TRANSACTION);
+  const [supplyAsset, setSupplyAsset] = useState({});
+  const [receiveAsset, setReceiveAsset] = useState({});
+
+  const onToggleCreateTransactionModal = () => {
+    createTransactionForm.resetFields();
+    setSupplyAsset({});
+    setReceiveAsset({});
+    setCreateTransactionModalVisiblity(!createTransactionModalVisible);
+  };
+
+  const onSubmitForm = (values) => {
+    let variables = {
+      supplyAssetId: supplyAsset?.id,
+      supplyValue: values.supplyValue,
+      receiveAssetId: receiveAsset?.id,
+      receiveValue: values.receiveValue,
+      transactedAt: values.transactedAt,
+    };
+    createTransaction({
+      variables,
+      onCompleted: (data) => {
+        if (data && data?.createTransaction?.transaction?.id) {
+          onCreateTransaction();
+          onToggleCreateTransactionModal();
+        }
+      },
+    });
+  };
+  return (
+    <div
+      style={{
+        width: "1015px",
+        border: "1px solid grey",
+        backgroundColor: "#222628",
+      }}
+    >
+      <Row justify="space-between" align="middle">
+        <Col>
+          <Typography.Title style={{ margin: "0px", padding: "10px" }}>
+            Ledger
+          </Typography.Title>
+        </Col>
+        <Col>
+          <Button
+            style={{ margin: "10px" }}
+            onClick={onToggleCreateTransactionModal}
+          >
+            Add Transaction
+          </Button>
+        </Col>
+      </Row>
+      <Modal
+        title="Create New Transaction"
+        visible={createTransactionModalVisible}
+        okText="Create"
+        okButtonProps={{ loading }}
+        onOk={() => createTransactionForm.submit()}
+        onCancel={onToggleCreateTransactionModal}
+      >
+        <Form
+          labelCol={{ span: 6 }}
+          wrapperCol={{ span: 18 }}
+          form={createTransactionForm}
+          onFinish={onSubmitForm}
+        >
+          <Form.Item
+            label="Supplied Asset"
+            name="supplyAsset"
+            required
+            rules={[
+              {
+                validator: () => {
+                  if (isEmpty(supplyAsset)) {
+                    return Promise.reject(
+                      new Error("Please choose the supplied asset")
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <AssetPicker asset={supplyAsset} setAsset={setSupplyAsset} />
+          </Form.Item>
+          <Form.Item
+            label="Supplied Value"
+            name="supplyValue"
+            required
+            rules={[
+              {
+                required: true,
+                message: "Please provide the supplied value!",
+              },
+            ]}
+          >
+            <Input
+              type="number"
+              suffix={(supplyAsset && supplyAsset?.ticker) || ""}
+              disabled={isEmpty(supplyAsset)}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Received Asset"
+            name="receiveAsset"
+            required
+            rules={[
+              {
+                validator: () => {
+                  if (isEmpty(receiveAsset)) {
+                    return Promise.reject(
+                      new Error("Please choose the received asset")
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <AssetPicker asset={receiveAsset} setAsset={setReceiveAsset} />
+          </Form.Item>
+          <Form.Item
+            label="Received Value"
+            name="receiveValue"
+            required
+            rules={[
+              {
+                required: true,
+                message: "Please provide the received value!",
+              },
+            ]}
+          >
+            <Input
+              type="number"
+              suffix={(receiveAsset && receiveAsset?.ticker) || ""}
+              disabled={isEmpty(receiveAsset)}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Transacted At"
+            name="transactedAt"
+            required
+            rules={[
+              {
+                required: true,
+                message: "Please selected the transaction date!",
+              },
+            ]}
+          >
+            <DatePicker
+              format={DATE_FORMAT}
+              disabledDate={(current) => current > new Date()}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+}
 
 function Pagination({
   rowStart,
@@ -221,7 +389,7 @@ const AssetEditor = forwardRef((props, ref) => {
       }}
       onCancel={exitFn}
     >
-      <AssetPicker
+      <AssetPickerCard
         preselectedAsset={props.value}
         onChange={onChange}
         onCancel={exitFn}
@@ -384,6 +552,7 @@ const LedgerTable = observer(() => {
         className="ag-theme-alpine-dark"
         style={{ width: "100%", height: "100%" }}
       >
+        <Header onCreateTransaction={() => refetch()} />
         <AgGridReact
           ref={transactionsTableRef}
           rowData={transactionsOfPage}

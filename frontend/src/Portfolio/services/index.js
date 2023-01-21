@@ -35,13 +35,9 @@ export const ASSETS = gql`
       ticker
       assetClass {
         id
-        name
-        decimalPlaces
       }
       country {
         id
-        name
-        code
       }
     }
     assetsCount(
@@ -79,9 +75,6 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       supplyAsset {
         id
         ticker
-        country {
-          id
-        }
         assetClass {
           id
         }
@@ -90,9 +83,6 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       receiveAsset {
         id
         ticker
-        country {
-          id
-        }
         assetClass {
           id
         }
@@ -101,6 +91,28 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       transactedAt
     }
     transactionsCount
+  }
+`;
+
+export const CREATE_TRANSACTION = gql`
+  mutation createTransaction(
+    $supplyAssetId: ID!
+    $supplyValue: Float!
+    $receiveAssetId: ID!
+    $receiveValue: Float!
+    $transactedAt: DateTime!
+  ) {
+    createTransaction(
+      supplyAssetId: $supplyAssetId
+      supplyValue: $supplyValue
+      receiveAssetId: $receiveAssetId
+      receiveValue: $receiveValue
+      transactedAt: $transactedAt
+    ) {
+      transaction {
+        id
+      }
+    }
   }
 `;
 
