@@ -34,6 +34,7 @@ import {
   DatePicker,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   Row,
@@ -80,6 +81,9 @@ function Header({ onCreateTransaction }) {
           onCreateTransaction();
           onToggleCreateTransactionModal();
         }
+      },
+      onError: (error) => {
+        message.error("Unable to create transaction! Please try again later!");
       },
     });
   };
@@ -400,32 +404,44 @@ const AssetEditor = forwardRef((props, ref) => {
 
 const LedgerTable = observer(() => {
   const [pageNo, setPageNo] = useState(0);
-  const { loading, data, refetch } = useQuery(GET_TRANSACTIONS_PAGINATED, {
-    variables: {
-      limit: TRANSACTIONS_LIMIT,
-      offset: pageNo * TRANSACTIONS_LIMIT,
-    },
-    notifyOnNetworkStatusChange: true,
-  });
+  const { loading, data, refetch, error } = useQuery(
+    GET_TRANSACTIONS_PAGINATED,
+    {
+      variables: {
+        limit: TRANSACTIONS_LIMIT,
+        offset: pageNo * TRANSACTIONS_LIMIT,
+      },
+      notifyOnNetworkStatusChange: true,
+    }
+  );
   const [updateTransaction] = useMutation(UPDATE_TRANSACTION);
   const [deleteTransaction] = useMutation(DELETE_TRANSACTION);
   const transactionsTableRef = useRef();
   const ledgerTableStore = useLedgerTableStore();
   const { transactionsOfPage, setTransactions } = ledgerTableStore;
 
-  useEffect(() => {
+  if (transactionsTableRef.current?.api) {
     if (loading) {
-      if (transactionsTableRef.current && transactionsTableRef.current.api) {
-        transactionsTableRef.current.api.showLoadingOverlay();
-      }
-    }
-    if (!loading && data) {
-      if (transactionsTableRef.current && transactionsTableRef.current.api) {
+      transactionsTableRef.current.api.showLoadingOverlay();
+    } else {
+      if (!transactionsOfPage.length) {
+        transactionsTableRef.current.api.showNoRowsOverlay();
+      } else {
         transactionsTableRef.current.api.hideOverlay();
       }
-      setTransactions(data?.transactions);
     }
-  }, [loading, data]);
+  }
+
+  useEffect(() => {
+    if (!loading) {
+      if (error) {
+        message.error("Unable to fetch transactions! Please try again later!");
+        return;
+      } else if (data) {
+        setTransactions(data?.transactions);
+      }
+    }
+  }, [loading, data, error]);
 
   const assetRenderer = (params) => (
     <AssetTag
@@ -470,6 +486,11 @@ const LedgerTable = observer(() => {
                     );
                     refetch();
                   }
+                },
+                onError: (error) => {
+                  message.error(
+                    "Unable to update transaction! Please try again later!"
+                  );
                 },
               })
             }
@@ -523,6 +544,11 @@ const LedgerTable = observer(() => {
                   );
                   refetch();
                 }
+              },
+              onError: (error) => {
+                message.error(
+                  "Unable to delete tranasction! Please try again later!"
+                );
               },
             })
           }

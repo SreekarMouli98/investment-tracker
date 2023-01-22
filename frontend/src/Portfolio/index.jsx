@@ -5,7 +5,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 
 import { APP_SEED_DATA } from "./services";
-import { AppHeader, Sidebar } from "./components";
+import { AppHeader, Sidebar, PageLoading, UnexpectedError } from "./components";
 import { AppStoreProvider, useAppStore } from "./stores/AppStore";
 
 const client = new ApolloClient({
@@ -29,16 +29,32 @@ function AppWrapper() {
 
 const Portfolio = observer(() => {
   const appStore = useAppStore();
-  const { loading, data } = useQuery(APP_SEED_DATA);
+  const { loading, data, error } = useQuery(APP_SEED_DATA);
 
   useEffect(() => {
-    if (data) {
-      appStore.setSeedData(data);
+    if (!loading) {
+      if (error) {
+        return;
+      } else if (data) {
+        appStore.setSeedData(data);
+      }
     }
-  }, [data]);
+  }, [loading, data, error]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{ height: "100vh" }}>
+        <PageLoading />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ height: "100vh" }}>
+        <UnexpectedError />
+      </div>
+    );
   }
 
   return (

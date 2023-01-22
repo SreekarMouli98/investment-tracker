@@ -11,6 +11,7 @@ import {
   Form,
   Input,
   List,
+  message,
   Modal,
   Row,
   Select,
@@ -85,13 +86,13 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
   const [createAssetModalVisible, setCreateAssetModalVisibility] =
     useState(false);
   const [newAssetForm] = Form.useForm();
-  const [createAsset, { loading: createAssetLoading, data: createAssetRes }] =
+  const [createAsset, { loading: createAssetLoading }] =
     useMutation(CREATE_ASSET);
   const [selectedAsset, setSelectedAsset] = useState(preselectedAsset);
 
   const onToggleFilters = () => setFiltersExpanded(!filtersExpanded);
 
-  const { loading, data, refetch } = useQuery(ASSETS, {
+  const { loading, data, error, refetch } = useQuery(ASSETS, {
     variables: {
       limit: LIMIT,
       offset: pageNo * LIMIT,
@@ -106,13 +107,20 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
     /**
      * Set the assets list after receiving the graphql response for GET_ASSETS.
      */
-    if (!loading && data) {
-      setAssetsList([...assetsList, ...data?.assets]);
-      if (assetsList.length + data?.assets?.length >= data?.assetsCount) {
+    setHasMore(true);
+    if (!loading) {
+      if (error) {
+        message.error("Unable to load assets! Please try again later!");
         setHasMore(false);
+        return;
+      } else if (data) {
+        setAssetsList([...assetsList, ...data?.assets]);
+        if (assetsList.length + data?.assets?.length >= data?.assetsCount) {
+          setHasMore(false);
+        }
       }
     }
-  }, [loading, data]);
+  }, [loading, data, error]);
 
   const onToggleCreateAssetModal = () => {
     newAssetForm.resetFields();
@@ -123,30 +131,6 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
     setAssetsList([]);
     setPageNo(0);
   };
-
-  useEffect(() => {
-    /**
-     * Reset & refetch the assets list after receiving the graphql response
-     * of CREATE_ASSET.
-     */
-    if (
-      !createAssetLoading &&
-      createAssetRes &&
-      createAssetRes?.createAsset?.asset
-    ) {
-      onToggleCreateAssetModal();
-      resetList();
-      refetch();
-    }
-  }, [
-    createAssetLoading,
-    createAssetRes,
-    pageNo,
-    selectedAssetClasses,
-    selectedCountries,
-    searchText,
-    refetch,
-  ]);
 
   const onSearch = (_searchText) => {
     resetList();
@@ -201,7 +185,27 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
                   labelCol={{ span: 6 }}
                   wrapperCol={{ span: 18 }}
                   form={newAssetForm}
-                  onFinish={(values) => createAsset({ variables: values })}
+                  onFinish={(values) =>
+                    createAsset({
+                      variables: values,
+                      onCompleted: (data) => {
+                        /**
+                         * Reset & refetch the assets list after receiving the graphql response
+                         * of CREATE_ASSET.
+                         */
+                        if (data?.createAsset?.asset) {
+                          onToggleCreateAssetModal();
+                          resetList();
+                          refetch();
+                        }
+                      },
+                      onError: () => {
+                        message.error(
+                          "Unable to create asset! Please try again later!"
+                        );
+                      },
+                    })
+                  }
                 >
                   <Form.Item
                     label="Ticker"
@@ -277,8 +281,8 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
                 bordered
                 className="asset-picker-list"
                 loading={loading}
-              >
-                {assetsList.map((asset, i) => (
+                dataSource={assetsList}
+                renderItem={(asset) => (
                   <List.Item
                     className={
                       selectedAsset?.id === asset?.id
@@ -286,16 +290,18 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
                         : "asset-picker-list-item"
                     }
                     onClick={() => setSelectedAsset(asset)}
-                    key={i}
                   >
                     {asset?.name} ({asset?.ticker})
                   </List.Item>
-                ))}
-                <div ref={listEndRef}>
-                  <div className="asset-picker-list-loader">
-                    {loading && <Spin />}
+                )}
+              >
+                {assetsList.length > 0 && (
+                  <div ref={listEndRef}>
+                    <div className="asset-picker-list-loader">
+                      {loading && <Spin />}
+                    </div>
                   </div>
-                </div>
+                )}
               </List>
             </Col>
           </Row>
