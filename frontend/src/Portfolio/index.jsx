@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 
+import { Ledger } from "./pages";
 import { APP_SEED_DATA } from "./services";
 import { AppHeader, Sidebar, PageLoading, UnexpectedError } from "./components";
 import { AppStoreProvider, useAppStore } from "./stores/AppStore";
@@ -69,6 +70,20 @@ const Portfolio = observer(() => {
     >
       <AppHeader />
       <Sidebar />
+      <div
+        style={{
+          position: "absolute",
+          top: "70px",
+          left: "80px",
+          width: "calc(100% - 80px)",
+          height: "calc(100% - 70px)",
+          overflowY: "auto",
+        }}
+      >
+        <Routes>
+          <Route path="/ledger" element={<Ledger />} />
+        </Routes>
+      </div>
     </div>
   );
 });

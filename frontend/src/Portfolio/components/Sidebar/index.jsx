@@ -1,31 +1,32 @@
 import { useState } from "react";
 import { Button, Layout, Menu } from "antd";
-import {
-  AreaChartOutlined,
-  DollarCircleOutlined,
-  FileTextOutlined,
-} from "@ant-design/icons";
+import { DollarCircleOutlined, FileTextOutlined } from "@ant-design/icons";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import "./styles.css";
+import { useEffect } from "react";
 
 const { Sider } = Layout;
 
 function Sidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [selected, setSelected] = useState("");
   const [collapsed, setCollapsed] = useState(true);
 
   const menuOptions = [
-    {
-      key: "dashboard",
-      label: "Dashboard",
-      icon: <AreaChartOutlined />,
-    },
     {
       key: "ledger",
       label: "Ledger",
       icon: <FileTextOutlined />,
     },
   ];
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/ledger")) {
+      setSelected("ledger");
+    }
+  }, [location]);
 
   return (
     <>
@@ -50,6 +51,7 @@ function Sidebar() {
           selectedKeys={[selected]}
           onSelect={({ key }) => {
             setSelected(key);
+            navigate(`/${key}`);
           }}
         />
       </Sider>
