@@ -11,6 +11,8 @@ services:
     volumes:
       - ./frontend/src:/code/frontend/src
       - ./frontend/public:/code/frontend/public
+    environment:
+      - REACT_APP_SERVER_URL=http://localhost:8080
 
   backend:
     build:

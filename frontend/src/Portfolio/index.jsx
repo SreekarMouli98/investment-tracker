@@ -9,8 +9,10 @@ import { APP_SEED_DATA } from "./services";
 import { AppHeader, Sidebar, PageLoading, UnexpectedError } from "./components";
 import { AppStoreProvider, useAppStore } from "./stores/AppStore";
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
 const client = new ApolloClient({
-  uri: "http://localhost:8080/graphql/",
+  uri: `${SERVER_URL}/graphql/`,
   cache: new InMemoryCache(),
 });
 
