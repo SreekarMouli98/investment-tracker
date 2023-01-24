@@ -2,6 +2,18 @@ version: "3.7"
 
 services:
 
+  frontend:
+    build:
+      context: frontend/.
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/src:/code/frontend/src
+      - ./frontend/public:/code/frontend/public
+    environment:
+      - REACT_APP_SERVER_URL=http://localhost:8080
+
   backend:
     build:
       context: .
@@ -18,3 +30,9 @@ services:
       - DB_USER=portfoliouser
       - DB_PASSWORD=Password@123
       - DB_PORT=5432
+      - CACHE_LOCATION=redis://127.0.0.1:6379/1
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
