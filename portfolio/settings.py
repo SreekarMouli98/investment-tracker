@@ -41,6 +41,9 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "channels",
+    "investment_tracker",
+    "etl",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -50,7 +53,7 @@ INSTALLED_APPS = [
     "graphene_django",
     "corsheaders",
     "rest_framework",
-    "investment_tracker",
+    "django_extensions",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +88,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "portfolio.wsgi.application"
+
+ASGI_APPLICATION = "portfolio.asgi.application"
+
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 
 # Database

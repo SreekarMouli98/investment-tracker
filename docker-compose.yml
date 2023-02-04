@@ -7,7 +7,7 @@ services:
       context: frontend/.
       dockerfile: Dockerfile
     ports:
-      - 3000:3000
+      - 3030:3000
     volumes:
       - ./frontend/src:/code/frontend/src
       - ./frontend/public:/code/frontend/public
@@ -21,7 +21,7 @@ services:
     volumes:
       - .:/code
     ports:
-      - 8000:8000
+      - 8080:8000
     environment:
       - DEBUG=1
       - SECRET_KEY=@r*&z!0xi#*-t80h0n+w3%4rqr7i(*f6(5k#1vjz70dfp7h^vt

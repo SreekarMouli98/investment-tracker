@@ -11,7 +11,7 @@ class AsyncTasksModel(models.Model):
     task_name = models.CharField(max_length=128, null=False)
     status = models.CharField(max_length=128, null=False, choices=Statuses.choices)
     percentage = models.IntegerField(null=False, default=0)
-    created_at = models.DateTimeField(auto_created=True, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
     started_at = models.DateTimeField(null=True)
     ended_at = models.DateTimeField(null=True)
 
