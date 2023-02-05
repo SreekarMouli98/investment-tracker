@@ -7,3 +7,4 @@ export { default as LedgerTable } from "./LedgerTable";
 export { default as PageLoading } from "./PageLoading";
 export { default as Sidebar } from "./Sidebar";
 export { default as UnexpectedError } from "./UnexpectedError";
+export { default as NoData } from "./NoData";

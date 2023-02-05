@@ -1,18 +1,43 @@
 import { useEffect } from "react";
-import { useQuery } from "@apollo/client";
+import { HttpLink, split, useQuery } from "@apollo/client";
 import { observer } from "mobx-react-lite";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
+import { getMainDefinition } from "@apollo/client/utilities";
+import { SubscriptionClient } from "subscriptions-transport-ws";
+import { WebSocketLink } from "@apollo/client/link/ws";
 
 import { Ledger } from "./pages";
 import { APP_SEED_DATA } from "./services";
 import { AppHeader, Sidebar, PageLoading, UnexpectedError } from "./components";
 import { AppStoreProvider, useAppStore } from "./stores/AppStore";
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+const SERVER_PROTOCOL = process.env.REACT_APP_SERVER_PROTOCOL;
+const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
+const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
+
+const httpLink = new HttpLink({
+  uri: `${SERVER_PROTOCOL}://${SERVER_HOST}:${SERVER_PORT}/graphql/`,
+});
+
+const wsLink = new WebSocketLink(
+  new SubscriptionClient(`ws://${SERVER_HOST}:${SERVER_PORT}/graphql/`)
+);
+
+const splitLink = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === "OperationDefinition" &&
+      definition.operation === "subscription"
+    );
+  },
+  wsLink,
+  httpLink
+);
 
 const client = new ApolloClient({
-  uri: `${SERVER_URL}/graphql/`,
+  link: splitLink,
   cache: new InMemoryCache(),
 });
 

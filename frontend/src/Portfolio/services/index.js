@@ -145,3 +145,19 @@ export const DELETE_TRANSACTION = gql`
     }
   }
 `;
+
+export const NOTIFICATIONS = gql`
+  subscription getNotifications {
+    asyncTasksSubscription {
+      asyncTasks {
+        id
+        taskName
+        status
+        percentage
+        createdAt
+        startedAt
+        endedAt
+      }
+    }
+  }
+`;
