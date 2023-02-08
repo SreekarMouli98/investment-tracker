@@ -1,17 +1,14 @@
 import graphene
-from django.utils import timezone
 
 from investment_tracker.schema.async_tasks_schema import AsyncTasksType
 from investment_tracker.accessors.async_tasks_accessor import AsyncTasksAccessor
-from investment_tracker.utils.common_utils import end_of_day, start_of_day
 
 
 class AsyncTasksQuery(graphene.ObjectType):
-    active_tasks = graphene.List(AsyncTasksType)
+    task_by_id_or_latest = graphene.Field(AsyncTasksType, task_id=graphene.ID(required=False, default_value=False))
 
-    def resolve_active_tasks(self, info):
-        dt = timezone.now()
-        return AsyncTasksAccessor().get_async_tasks(
-            within=[start_of_day(dt), end_of_day(dt)],
-            order_by=["-created_at"],
-        )
+    def resolve_task_by_id_or_latest(self, info, task_id):
+        if task_id:
+            return AsyncTasksAccessor().get_task_by_id(task_id)
+        else:
+            return AsyncTasksAccessor().get_latest_task()

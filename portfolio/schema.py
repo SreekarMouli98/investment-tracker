@@ -1,10 +1,11 @@
 import graphene
 
+from etl.queries import ETLQueries
 from investment_tracker.queries import InvestmentTrackerQueries
 from investment_tracker.mutations import InvestmentTrackerMutations
 
 
-class Query(InvestmentTrackerQueries, graphene.ObjectType):
+class Query(ETLQueries, InvestmentTrackerQueries, graphene.ObjectType):
     pass
 
 
