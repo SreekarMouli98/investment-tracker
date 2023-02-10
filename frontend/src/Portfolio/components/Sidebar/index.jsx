@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Button, Layout, Menu } from "antd";
-import { DollarCircleOutlined, FileTextOutlined } from "@ant-design/icons";
+import {
+  ApiOutlined,
+  DollarCircleOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import "./styles.css";
@@ -20,11 +24,18 @@ function Sidebar() {
       label: "Ledger",
       icon: <FileTextOutlined />,
     },
+    {
+      key: "integrations",
+      label: "Integrations",
+      icon: <ApiOutlined />,
+    },
   ];
 
   useEffect(() => {
     if (location.pathname.startsWith("/ledger")) {
       setSelected("ledger");
+    } else if (location.pathname.startsWith("/integrations")) {
+      setSelected("integrations");
     }
   }, [location]);
 

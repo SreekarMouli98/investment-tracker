@@ -145,3 +145,23 @@ export const DELETE_TRANSACTION = gql`
     }
   }
 `;
+
+export const IMPORT_TRANSACTIONS = gql`
+  query importTransactions($source: String!, $decodedFile: String!) {
+    importTransactions(source: $source, decodedFile: $decodedFile)
+  }
+`;
+
+export const GET_TASK_BY_ID_OR_LATEST = gql`
+  query getTaskByIdOrLatest($taskId: ID) {
+    taskByIdOrLatest(taskId: $taskId) {
+      id
+      taskName
+      status
+      percentage
+      createdAt
+      startedAt
+      endedAt
+    }
+  }
+`;
