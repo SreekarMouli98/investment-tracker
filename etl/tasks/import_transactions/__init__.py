@@ -1,2 +1,3 @@
 from .import_transactions_from_zerodha import *
 from .import_transactions_from_indmoney import *
+from .import_transactions_from_vauld import *

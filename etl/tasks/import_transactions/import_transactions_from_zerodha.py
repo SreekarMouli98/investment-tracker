@@ -1,4 +1,3 @@
-import base64
 import pandas as pd
 import traceback
 from datetime import datetime
@@ -7,6 +6,7 @@ from io import BytesIO
 from openpyxl import load_workbook
 from celery import shared_task
 
+from etl.utils.common_utils import decode_base64_data
 from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor, CountriesAccessor
 from investment_tracker.models import AssetsModel, TransactionsModel
 from investment_tracker.services import AsyncTasksService
@@ -34,8 +34,7 @@ ZERODHA_TABLE_COLS = {
 
 def extract(source_data: str) -> list[dict]:
     """Extracts data from Zerodha Tradebook xlsx"""
-    _, file_data = source_data.split(";base64,")
-    data = BytesIO(base64.b64decode(file_data))
+    data = BytesIO(decode_base64_data(source_data))
     wb = load_workbook(filename=data, read_only=True)
     data = []
     for sheetname in wb.sheetnames:
