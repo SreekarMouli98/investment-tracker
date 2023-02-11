@@ -74,6 +74,7 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       id
       supplyAsset {
         id
+        name
         ticker
         assetClass {
           id
@@ -82,6 +83,7 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       supplyValue
       receiveAsset {
         id
+        name
         ticker
         assetClass {
           id

@@ -1,8 +1,9 @@
-import { Tag } from "antd";
+import { Tag, Tooltip } from "antd";
 
 import { useAppStore } from "../../stores/AppStore";
+import { truncateStringToLength } from "../../utils";
 
-function AssetTag({ ticker, assetClassId }) {
+function AssetTag({ ticker, name, assetClassId }) {
   const appStore = useAppStore();
 
   const assetClass = appStore.getAssetClassById(assetClassId) || {};
@@ -34,12 +35,14 @@ function AssetTag({ ticker, assetClassId }) {
       break;
   }
 
+  const text = truncateStringToLength(`${assetClass.name} : ${ticker}`, 23);
+
   return (
-    <div>
-      <Tag color={tagColor}>
-        {assetClass.name} : {ticker}
-      </Tag>
-    </div>
+    <Tooltip title={name}>
+      <div style={{ width: "min-content" }}>
+        <Tag color={tagColor}>{text}</Tag>
+      </div>
+    </Tooltip>
   );
 }
 

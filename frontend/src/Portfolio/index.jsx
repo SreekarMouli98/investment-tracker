@@ -32,7 +32,9 @@ function AppWrapper() {
 
 const Portfolio = observer(() => {
   const appStore = useAppStore();
-  const { loading, data, error } = useQuery(APP_SEED_DATA);
+  const { loading, data, error } = useQuery(APP_SEED_DATA, {
+    fetchPolicy: "no-cache",
+  });
 
   useEffect(() => {
     if (!loading) {

@@ -1,39 +1,35 @@
 import base64
 import pandas as pd
 import traceback
+from celery import shared_task
 from datetime import datetime
 from django.utils.timezone import make_aware
 from io import BytesIO
 from openpyxl import load_workbook
-from celery import shared_task
 
 from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor, CountriesAccessor
 from investment_tracker.models import AssetsModel, TransactionsModel
 from investment_tracker.services import AsyncTasksService
 from investment_tracker.utils.transactions_utils import to_lower_denomination
 
-
-ZERODHA_TABLE_COLS = {
-    "ORDER_NO": "Order No.",
-    "ORDER_TIME": "Order Time.",
-    "TRADE_NO": "Trade No.",
-    "TRADE_TIME": "Trade Time",
-    "SECURITY_CONTRACT_DESCRIPTION": "Security/Contract Description",
-    "BUY_B_SELL_S": "Buy(B) / Sell(S)",
-    "QUANTITY": "Quantity",
-    "GROSS_RATE_TRADE_PRICE_PER_UNIT_RS": "Gross Rate / Trade Price Per Unit (Rs)",
-    "BROKERAGE_PER_UNIT_RS": "Brokerage per Unit (Rs)",
-    "NET_RATE_PER_UNIT_RS": "Net Rate per Unit (Rs)",
-    "CLOSING_RATE_PER_UNIT_ONLY_FOR_DERIVATIVES_RS": "Closing Rate per Unit (Only for Derivatives) (Rs)",
-    "NET_TOTAL_BEFORE_LEVIES_RS": "Net Total (Before Levies) (Rs)",
-    "REMARKS": "Remarks",
-    "ISIN": "ISIN",
-    "DATE": "Date",
+INDMONEY_TABLE_COLS = {
+    "SOURCE_HOLDING_ID": "Source holding ID",
+    "TRADE_DATE": "Trade Date",
+    "INVESTMENT_NAME": "Investment name",
+    "ASSET_TYPE": "Asset Type",
+    "BUY_UNITS": "Buy units",
+    "SELL_UNITS": "Sell units",
+    "DIVIDEND_REINVESTED_UNITS": "Dividend reinvested units",
+    "CASH_INFLOW": "Cash inflow",
+    "CASH_OUTFLOW": "Cash outflow",
+    "BENCHMARK_CASH_INFLOW": "Benchmark cash inflow",
+    "BENCHMARK_CASH_OUTFLOW": "Benchmark cash outflow",
+    "DIVIDEND_AMOUNT": "Dividend Amount",
 }
 
 
 def extract(source_data: str) -> list[dict]:
-    """Extracts data from Zerodha Tradebook xlsx"""
+    """Extracts data from INDMoney Tradebook xlsx"""
     _, file_data = source_data.split(";base64,")
     data = BytesIO(base64.b64decode(file_data))
     wb = load_workbook(filename=data, read_only=True)
@@ -50,73 +46,76 @@ def extract(source_data: str) -> list[dict]:
                 sheet_transactions.append(row)
             elif found_cols and not found_data:
                 found_data = True
-            elif list(row) == list(ZERODHA_TABLE_COLS.values())[:-1]:
+            elif list(row) == list(INDMONEY_TABLE_COLS.values()):
                 found_cols = True
-        sheet_transactions_df = pd.DataFrame(sheet_transactions, columns=list(ZERODHA_TABLE_COLS.values())[:-1])
-        sheet_transactions_df[ZERODHA_TABLE_COLS["DATE"]] = sheetname
+        sheet_transactions_df = pd.DataFrame(sheet_transactions, columns=list(INDMONEY_TABLE_COLS.values()))
         data.extend(sheet_transactions_df.to_dict("records"))
     return data
 
 
 def transform(extracted_data: list[dict]) -> dict:
-    """Transforms extracted data from Zerodha Tradebook xlsx"""
+    """Transforms extracted data from INDMoney Tradebook xlsx"""
     asset_classes = AssetClassesAccessor().get_asset_classes()
     asset_classes_map = {asset_class.name: asset_class.id for asset_class in asset_classes}
     countries = CountriesAccessor().get_countries()
     countries_map = {country.code: country.id for country in countries}
-    transactions_df = pd.DataFrame(extracted_data, columns=list(ZERODHA_TABLE_COLS.values()))
-    transactions_df[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]] = transactions_df[
-        ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]
-    ].apply(lambda item: item.split()[0])
-    tickers = set(transactions_df[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]].tolist())
-    existing_assets = AssetsAccessor().get_assets(tickers=list(tickers) + ["INR"])
+    transactions_df = pd.DataFrame(extracted_data, columns=list(INDMONEY_TABLE_COLS.values()))
+    # Ignoring Dividends
+    transactions_df = transactions_df[
+        (transactions_df[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0")
+        | (transactions_df[INDMONEY_TABLE_COLS["SELL_UNITS"]] != "0")
+    ]
+    names = set(transactions_df[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]].tolist())
+    existing_assets = AssetsAccessor().get_assets(tickers=list(names) + ["USD"])
     assets_map = {asset.ticker: asset for asset in existing_assets}
-    missing_assets = tickers.difference(assets_map.keys())
+    missing_assets = names.difference(assets_map.keys())
+    asset_type_map = transactions_df.set_index(INDMONEY_TABLE_COLS["INVESTMENT_NAME"]).to_dict()[
+        INDMONEY_TABLE_COLS["ASSET_TYPE"]
+    ]
     new_assets = []
     for ticker in missing_assets:
-        asset = AssetsModel(
-            name=ticker, ticker=ticker, asset_class_id=asset_classes_map["Stock"], country_id=countries_map["IND"]
-        )
+        asset_type = asset_type_map[ticker]
+        asset_class = 0
+        if asset_type == "US_STOCK":
+            asset_class = asset_classes_map["Stock"]
+        elif asset_type == "MF":
+            asset_class = asset_classes_map["Mutual Fund"]
+        asset = AssetsModel(name=ticker, ticker=ticker, asset_class_id=asset_class, country_id=countries_map["USA"])
         assets_map[ticker] = asset
         new_assets.append(asset)
     transactions_df["supply_asset"] = transactions_df.apply(
-        lambda row: assets_map["INR"]
-        if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
-        else assets_map[row[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]]],
+        lambda row: assets_map["USD"]
+        if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
+        else assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]],
         axis=1,
     )
     transactions_df["supply_value"] = transactions_df.apply(
-        lambda row: to_lower_denomination(
-            row[ZERODHA_TABLE_COLS["NET_TOTAL_BEFORE_LEVIES_RS"]], asset=assets_map["INR"]
-        )
-        * -1
-        if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
+        lambda row: to_lower_denomination(row[INDMONEY_TABLE_COLS["CASH_INFLOW"]], asset=assets_map["USD"])
+        if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
         else to_lower_denomination(
-            row[ZERODHA_TABLE_COLS["QUANTITY"]],
-            asset=assets_map[row[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]]],
+            row[INDMONEY_TABLE_COLS["SELL_UNITS"]], asset=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]]
         ),
         axis=1,
     )
     transactions_df["receive_asset"] = transactions_df.apply(
-        lambda row: assets_map[row[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]]]
-        if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
-        else assets_map["INR"],
+        lambda row: assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]]
+        if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
+        else assets_map["USD"],
         axis=1,
     )
     transactions_df["receive_value"] = transactions_df.apply(
         lambda row: to_lower_denomination(
-            row[ZERODHA_TABLE_COLS["QUANTITY"]],
-            asset=assets_map[row[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]]],
+            row[INDMONEY_TABLE_COLS["BUY_UNITS"]], asset=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]]
         )
-        if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
-        else to_lower_denomination(row[ZERODHA_TABLE_COLS["NET_TOTAL_BEFORE_LEVIES_RS"]], asset=assets_map["INR"]),
+        if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
+        else to_lower_denomination(row[INDMONEY_TABLE_COLS["CASH_OUTFLOW"]], asset=assets_map["USD"]) * -1,
         axis=1,
     )
     transactions_df["transacted_at"] = transactions_df.apply(
-        lambda row: make_aware(datetime.strptime(row[ZERODHA_TABLE_COLS["DATE"]], "%d-%m-%Y")),
+        lambda row: make_aware(datetime.strptime(row[INDMONEY_TABLE_COLS["TRADE_DATE"]], "%Y-%m-%d")),
         axis=1,
     )
-    transactions_df = transactions_df.drop(columns=list(ZERODHA_TABLE_COLS.values()))
+    transactions_df = transactions_df.drop(columns=list(INDMONEY_TABLE_COLS.values()))
     transactions = transactions_df.to_dict("records")
     transactions = [TransactionsModel(**transaction) for transaction in transactions]
     return {"transactions": transactions, "assets": new_assets}

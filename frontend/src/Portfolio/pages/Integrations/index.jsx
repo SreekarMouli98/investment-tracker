@@ -186,7 +186,12 @@ function Integrations() {
               disabled={loading || isTaskPending}
             >
               <Form.Item label="Source" name="source">
-                <Select options={[{ label: "Zerodha", value: "Zerodha" }]} />
+                <Select
+                  options={[
+                    { label: "Zerodha", value: "Zerodha" },
+                    { label: "INDMoney", value: "INDMoney" },
+                  ]}
+                />
               </Form.Item>
               <Form.Item label="File" name="file">
                 <Upload beforeUpload={() => false} maxCount={1}>
