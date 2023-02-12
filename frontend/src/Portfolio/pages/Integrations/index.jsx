@@ -23,7 +23,7 @@ import { includes } from "lodash";
 
 import { GET_TASK_BY_ID_OR_LATEST, IMPORT_TRANSACTIONS } from "../../services";
 import PageLoading from "../../components/PageLoading";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const POLL_INTERVAL = 2000;
 
@@ -102,8 +102,121 @@ function Task({ loading, task }) {
   );
 }
 
-function Integrations() {
+function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
   const [importTransactions] = useLazyQuery(IMPORT_TRANSACTIONS);
+  const [source, setSource] = useState();
+
+  const uploadFiles = (files) => {
+    let filesP = files.map((file) => {
+      const reader = new FileReader();
+      return new Promise((resolve, reject) => {
+        reader.onload = () => {
+          resolve(reader.result);
+        };
+        reader.onerror = (error) => {
+          message.error("Failed to upload file! Please try again!");
+          reject();
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    return Promise.all(filesP);
+  };
+
+  const onFormSubmitted = async (values) => {
+    let files = [values?.file?.file];
+    if (values?.source === "Vauld") {
+      files.push(values?.secondFile?.file);
+    }
+    let uploadedFiles = await uploadFiles(files);
+    let variables = {
+      source: values?.source,
+    };
+    if (values?.source === "Vauld") {
+      variables.encodedFiles = {
+        crypto_exchanges: uploadedFiles[0],
+        fiat_exchanges: uploadedFiles[1],
+      };
+    } else {
+      variables.encodedFiles = uploadedFiles[0];
+    }
+    importTransactions({
+      fetchPolicy: "no-cache",
+      variables,
+      onCompleted: (data) => {
+        const taskId = data?.importTransactions;
+        getTaskByIdOrLatest({ variables: { taskId } });
+      },
+      onError: () => {
+        message.error("Failed to import transactions! Please try again!");
+      },
+    });
+  };
+
+  return (
+    <Card title={<Typography.Title>Import Transactions</Typography.Title>}>
+      <Form
+        labelCol={{
+          span: 8,
+        }}
+        wrapperCol={{
+          span: 16,
+        }}
+        onFinish={onFormSubmitted}
+        disabled={loading || isTaskPending}
+      >
+        <Form.Item label="Source" name="source" required>
+          <Select
+            options={[
+              { label: "Zerodha", value: "Zerodha" },
+              { label: "INDMoney", value: "INDMoney" },
+              { label: "Vauld", value: "Vauld" },
+              { label: "Wazirx", value: "Wazirx" },
+            ]}
+            value={source}
+            onChange={(value) => setSource(value)}
+          />
+        </Form.Item>
+        {source !== "Vauld" ? (
+          <Form.Item label="File" name="file" required>
+            <Upload beforeUpload={() => false} maxCount={1}>
+              <Button icon={<UploadOutlined />}>Upload Report</Button>
+            </Upload>
+          </Form.Item>
+        ) : (
+          <>
+            <Form.Item label="File" name="file" required>
+              <Upload beforeUpload={() => false} maxCount={1}>
+                <Button icon={<UploadOutlined />}>
+                  Upload Cryto Exchanges Report
+                </Button>
+              </Upload>
+            </Form.Item>
+            <Form.Item label="File" name="secondFile" required>
+              <Upload beforeUpload={() => false} maxCount={1}>
+                <Button icon={<UploadOutlined />}>
+                  Upload Fiat Exchanges Report
+                </Button>
+              </Upload>
+            </Form.Item>
+          </>
+        )}
+        <Form.Item
+          wrapperCol={{
+            offset: 8,
+            span: 16,
+          }}
+        >
+          <Button htmlType="submit" loading={isTaskPending}>
+            Import
+          </Button>
+        </Form.Item>
+      </Form>
+    </Card>
+  );
+}
+
+function Integrations() {
   const [
     getTaskByIdOrLatest,
     { data, loading, error, startPolling, stopPolling },
@@ -149,67 +262,12 @@ function Integrations() {
         )}
       </Row>
       <Row>
-        <Col>
-          <Card
-            title={<Typography.Title>Import Transactions</Typography.Title>}
-          >
-            <Form
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              onFinish={(values) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                  importTransactions({
-                    fetchPolicy: "no-cache",
-                    variables: {
-                      source: values?.source,
-                      decodedFile: reader.result,
-                    },
-                    onCompleted: (data) => {
-                      const taskId = data?.importTransactions;
-                      getTaskByIdOrLatest({ variables: { taskId } });
-                    },
-                    onError: () => {
-                      message.error("Failed to upload file! Please try again!");
-                    },
-                  });
-                };
-                reader.onerror = (error) => {
-                  message.error("Failed to upload file! Please try again!");
-                };
-                reader.readAsDataURL(values?.file?.file);
-              }}
-              disabled={loading || isTaskPending}
-            >
-              <Form.Item label="Source" name="source">
-                <Select
-                  options={[
-                    { label: "Zerodha", value: "Zerodha" },
-                    { label: "INDMoney", value: "INDMoney" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item label="File" name="file">
-                <Upload beforeUpload={() => false} maxCount={1}>
-                  <Button icon={<UploadOutlined />}>Upload Report</Button>
-                </Upload>
-              </Form.Item>
-              <Form.Item
-                wrapperCol={{
-                  offset: 8,
-                  span: 16,
-                }}
-              >
-                <Button htmlType="submit" loading={isTaskPending}>
-                  Import
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
+        <Col span={8}>
+          <ImportTransactions
+            getTaskByIdOrLatest={getTaskByIdOrLatest}
+            loading={loading}
+            isTaskPending={isTaskPending}
+          />
         </Col>
       </Row>
     </div>

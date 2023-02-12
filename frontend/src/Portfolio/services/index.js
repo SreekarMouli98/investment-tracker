@@ -149,8 +149,8 @@ export const DELETE_TRANSACTION = gql`
 `;
 
 export const IMPORT_TRANSACTIONS = gql`
-  query importTransactions($source: String!, $decodedFile: String!) {
-    importTransactions(source: $source, decodedFile: $decodedFile)
+  query importTransactions($source: String!, $encodedFiles: GenericScalar!) {
+    importTransactions(source: $source, encodedFiles: $encodedFiles)
   }
 `;
 

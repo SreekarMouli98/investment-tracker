@@ -10,6 +10,9 @@ from etl.tasks.import_transactions.import_transactions_from_indmoney import (
 from etl.tasks.import_transactions.import_transactions_from_vauld import (
     run as import_transactions_from_vauld_etl,
 )
+from etl.tasks.import_transactions.import_transactions_from_wazirx import (
+    run as import_transactions_from_wazirx_etl,
+)
 from investment_tracker.constants import ASYNC_TASKS
 from investment_tracker.services.async_tasks_services import AsyncTasksService
 
@@ -27,4 +30,6 @@ class ImportTransactionsQuery(graphene.ObjectType):
             import_transactions_from_indmoney_etl.delay(async_task_id, encoded_files)
         elif source == "Vauld":
             import_transactions_from_vauld_etl.delay(async_task_id, encoded_files)
+        elif source == "Wazirx":
+            import_transactions_from_wazirx_etl.delay(async_task_id, encoded_files)
         return async_task_id
