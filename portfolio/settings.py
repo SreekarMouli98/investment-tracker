@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "investment_tracker",
+    "django_extensions",
 ]
 
 MIDDLEWARE = [
@@ -167,3 +168,7 @@ REST_FRAMEWORK = {
 GRAPHENE = {
     "SCHEMA": "portfolio.schema.schema",
 }
+
+CELERY_BROKER_URL = os.environ.get("CACHE_LOCATION")
+CELERY_RESULT_BACKEND = os.environ.get("CACHE_LOCATION")
+CELERY_IMPORTS = ("etl.tasks",)

@@ -74,6 +74,7 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       id
       supplyAsset {
         id
+        name
         ticker
         assetClass {
           id
@@ -82,6 +83,7 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
       supplyValue
       receiveAsset {
         id
+        name
         ticker
         assetClass {
           id
@@ -142,6 +144,26 @@ export const DELETE_TRANSACTION = gql`
   mutation deleteTransaction($transactionId: ID!) {
     deleteTransaction(transactionId: $transactionId) {
       ok
+    }
+  }
+`;
+
+export const IMPORT_TRANSACTIONS = gql`
+  query importTransactions($source: String!, $encodedFiles: GenericScalar!) {
+    importTransactions(source: $source, encodedFiles: $encodedFiles)
+  }
+`;
+
+export const GET_TASK_BY_ID_OR_LATEST = gql`
+  query getTaskByIdOrLatest($taskId: ID) {
+    taskByIdOrLatest(taskId: $taskId) {
+      id
+      taskName
+      status
+      percentage
+      createdAt
+      startedAt
+      endedAt
     }
   }
 `;

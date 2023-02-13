@@ -43,7 +43,7 @@ import {
   Typography,
 } from "antd";
 import { LedgerTableStoreProvider, useLedgerTableStore } from "./store";
-import { normalizeDate } from "../../utils";
+import { normalizeDate, truncateStringToLength } from "../../utils";
 import AssetPickerCard from "../AssetPickerCard";
 import AssetPicker from "../AssetPicker";
 
@@ -87,6 +87,7 @@ function Header({ onCreateTransaction }) {
       },
     });
   };
+
   return (
     <div
       style={{
@@ -156,7 +157,10 @@ function Header({ onCreateTransaction }) {
           >
             <Input
               type="number"
-              suffix={(supplyAsset && supplyAsset?.ticker) || ""}
+              suffix={truncateStringToLength(
+                supplyAsset && supplyAsset?.ticker,
+                10
+              )}
               disabled={isEmpty(supplyAsset)}
             />
           </Form.Item>
@@ -192,7 +196,10 @@ function Header({ onCreateTransaction }) {
           >
             <Input
               type="number"
-              suffix={(receiveAsset && receiveAsset?.ticker) || ""}
+              suffix={truncateStringToLength(
+                receiveAsset && receiveAsset?.ticker,
+                10
+              )}
               disabled={isEmpty(receiveAsset)}
             />
           </Form.Item>
@@ -407,6 +414,7 @@ const LedgerTable = observer(() => {
   const { loading, data, refetch, error } = useQuery(
     GET_TRANSACTIONS_PAGINATED,
     {
+      fetchPolicy: "no-cache",
       variables: {
         limit: TRANSACTIONS_LIMIT,
         offset: pageNo * TRANSACTIONS_LIMIT,
@@ -446,6 +454,7 @@ const LedgerTable = observer(() => {
   const assetRenderer = (params) => (
     <AssetTag
       ticker={params.value.ticker}
+      name={params.value.name}
       assetClassId={params.value.assetClass.id}
     />
   );

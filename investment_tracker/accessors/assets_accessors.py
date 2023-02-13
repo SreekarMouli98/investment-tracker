@@ -21,7 +21,9 @@ class AssetClassesAccessor:
 
 
 class AssetsAccessor:
-    def get_assets(self, limit=None, offset=None, asset_classes=None, countries=None, search_text=None, order_by=None):
+    def get_assets(
+        self, limit=None, offset=None, asset_classes=None, countries=None, tickers=None, search_text=None, order_by=None
+    ):
         qs = AssetsModel.objects.all()
         if asset_classes:
             qs = qs.filter(asset_class__id__in=asset_classes)
@@ -34,6 +36,8 @@ class AssetsAccessor:
                 qs = qs.filter(country__id__in=countries)
             elif include_no_country:
                 qs = qs.filter(country__isnull=True)
+        if tickers:
+            qs = qs.filter(ticker__in=tickers)
         if search_text:
             qs = qs.filter(Q(name__icontains=search_text) | Q(ticker__icontains=search_text))
         if order_by:

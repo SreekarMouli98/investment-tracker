@@ -93,6 +93,7 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
   const onToggleFilters = () => setFiltersExpanded(!filtersExpanded);
 
   const { loading, data, error, refetch } = useQuery(ASSETS, {
+    fetchPolicy: "no-cache",
     variables: {
       limit: LIMIT,
       offset: pageNo * LIMIT,

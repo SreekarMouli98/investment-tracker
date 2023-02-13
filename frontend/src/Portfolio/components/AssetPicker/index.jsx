@@ -21,6 +21,7 @@ function AssetPicker({ asset, setAsset }) {
         ) : (
           <AssetTag
             ticker={asset?.ticker}
+            name={asset?.name}
             assetClassId={asset?.assetClass?.id}
           />
         )}

@@ -4,7 +4,7 @@ import { observer } from "mobx-react-lite";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 
-import { Ledger } from "./pages";
+import { Integrations, Ledger } from "./pages";
 import { APP_SEED_DATA } from "./services";
 import { AppHeader, Sidebar, PageLoading, UnexpectedError } from "./components";
 import { AppStoreProvider, useAppStore } from "./stores/AppStore";
@@ -32,7 +32,9 @@ function AppWrapper() {
 
 const Portfolio = observer(() => {
   const appStore = useAppStore();
-  const { loading, data, error } = useQuery(APP_SEED_DATA);
+  const { loading, data, error } = useQuery(APP_SEED_DATA, {
+    fetchPolicy: "no-cache",
+  });
 
   useEffect(() => {
     if (!loading) {
@@ -84,6 +86,7 @@ const Portfolio = observer(() => {
       >
         <Routes>
           <Route path="/ledger" element={<Ledger />} />
+          <Route path="/integrations" element={<Integrations />} />
         </Routes>
       </div>
     </div>

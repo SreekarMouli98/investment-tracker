@@ -29,3 +29,13 @@ export const normalizeDate = (date) => {
     .set("millisecond", 0)
     .format();
 };
+
+export const truncateStringToLength = (str, length) => {
+  if (!str) {
+    return "";
+  }
+  if (str.length > length) {
+    return str.slice(0, length - 3) + "...";
+  }
+  return str;
+};
