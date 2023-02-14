@@ -1,9 +1,12 @@
 import graphene
 from graphql import GraphQLError
 
+from etl.tasks.compute_holdings import run as compute_holdings_etl
+from investment_tracker.constants import ASYNC_TASKS
 from investment_tracker.schema.transactions_schema import TransactionsType
 from investment_tracker.models.transactions_models import TransactionsModel
 from investment_tracker.accessors.transactions_accessors import TransactionsAccessor
+from investment_tracker.services.async_tasks_services import AsyncTasksService
 from investment_tracker.utils.transactions_utils import to_lower_denomination
 
 
@@ -26,6 +29,8 @@ class CreateTransactionMutation(graphene.Mutation):
             transacted_at=transacted_at,
         )
         transaction = TransactionsAccessor().persist(transaction)
+        async_task_id = AsyncTasksService().create_async_task(ASYNC_TASKS["COMPUTE_HOLDINGS"])
+        compute_holdings_etl.delay(async_task_id, transacted_at)
         return CreateTransactionMutation(transaction=transaction)
 
 
@@ -51,6 +56,8 @@ class UpdateTransactionMutation(graphene.Mutation):
             receive_value=to_lower_denomination(receive_value, asset_id=receive_asset_id),
             transacted_at=transacted_at,
         )
+        async_task_id = AsyncTasksService().create_async_task(ASYNC_TASKS["COMPUTE_HOLDINGS"])
+        compute_holdings_etl.delay(async_task_id, transacted_at)
         return UpdateTransactionMutation(ok=True)
 
 
@@ -66,6 +73,8 @@ class DeleteTransactionMutation(graphene.Mutation):
         except TransactionsModel.DoesNotExist:
             raise GraphQLError("Transaction doesn't exist!")
         transaction.delete()
+        async_task_id = AsyncTasksService().create_async_task(ASYNC_TASKS["COMPUTE_HOLDINGS"])
+        compute_holdings_etl.delay(async_task_id, transaction.transacted_at)
         return DeleteTransactionMutation(ok=True)
 
 

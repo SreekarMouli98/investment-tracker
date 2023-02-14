@@ -8,8 +8,10 @@ class TransactionsAccessor:
         transaction.save()
         return transaction
 
-    def get_transactions(self, limit=None, offset=None, order_by=None):
+    def get_transactions(self, after_date=None, limit=None, offset=None, order_by=None):
         qs = TransactionsModel.objects.filter()
+        if after_date:
+            qs = qs.filter(transacted_at__gte=after_date)
         if order_by:
             qs = qs.order_by(*order_by)
         if offset is not None and limit is not None:
