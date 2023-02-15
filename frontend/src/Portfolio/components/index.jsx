@@ -3,6 +3,7 @@ export { default as AssetPicker } from "./AssetPicker";
 export { default as AssetPickerCard } from "./AssetPickerCard";
 export { default as AssetTag } from "./AssetTag";
 export { default as AssetValue } from "./AssetValue";
+export { default as HoldingsTable } from "./HoldingsTable";
 export { default as LedgerTable } from "./LedgerTable";
 export { default as PageLoading } from "./PageLoading";
 export { default as Sidebar } from "./Sidebar";

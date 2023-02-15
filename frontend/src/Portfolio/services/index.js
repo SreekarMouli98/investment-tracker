@@ -167,3 +167,25 @@ export const GET_TASK_BY_ID_OR_LATEST = gql`
     }
   }
 `;
+
+export const GET_HOLDINGS_PAGINATED = gql`
+  query getHoldings($limit: Int, $offset: Int) {
+    holdings(limit: $limit, offset: $offset) {
+      id
+      asset {
+        id
+        name
+        ticker
+        assetClass {
+          id
+        }
+        country {
+          id
+        }
+      }
+      value
+      date
+    }
+    holdingsCount
+  }
+`;
