@@ -81,6 +81,8 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
         }
       }
       supplyValue
+      supplyBaseConvRate
+      supplyInBase
       receiveAsset {
         id
         name
@@ -90,6 +92,8 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
         }
       }
       receiveValue
+      receiveBaseConvRate
+      receiveInBase
       transactedAt
     }
     transactionsCount
@@ -100,15 +104,19 @@ export const CREATE_TRANSACTION = gql`
   mutation createTransaction(
     $supplyAssetId: ID!
     $supplyValue: Float!
+    $supplyBaseConvRate: Float!
     $receiveAssetId: ID!
     $receiveValue: Float!
+    $receiveBaseConvRate: Float!
     $transactedAt: DateTime!
   ) {
     createTransaction(
       supplyAssetId: $supplyAssetId
       supplyValue: $supplyValue
+      supplyBaseConvRate: $supplyBaseConvRate
       receiveAssetId: $receiveAssetId
       receiveValue: $receiveValue
+      receiveBaseConvRate: $receiveBaseConvRate
       transactedAt: $transactedAt
     ) {
       transaction {
@@ -123,16 +131,20 @@ export const UPDATE_TRANSACTION = gql`
     $transactionId: ID!
     $supplyAssetId: ID!
     $supplyValue: Float!
+    $supplyBaseConvRate: Float!
     $receiveAssetId: ID!
     $receiveValue: Float!
+    $receiveBaseConvRate: Float!
     $transactedAt: DateTime!
   ) {
     updateTransaction(
       transactionId: $transactionId
       supplyAssetId: $supplyAssetId
       supplyValue: $supplyValue
+      supplyBaseConvRate: $supplyBaseConvRate
       receiveAssetId: $receiveAssetId
       receiveValue: $receiveValue
+      receiveBaseConvRate: $receiveBaseConvRate
       transactedAt: $transactedAt
     ) {
       ok

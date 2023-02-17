@@ -11,6 +11,7 @@ class AppStore {
       countries: observable,
       setSeedData: action,
       assetClassesIdMap: computed,
+      assetClassesNamesMap: computed,
       countriesIdMap: computed,
     });
   }
@@ -29,6 +30,16 @@ class AppStore {
   }
 
   getAssetClassById = (id) => this.assetClassesIdMap[id];
+
+  get assetClassesNamesMap() {
+    let _map = {};
+    for (let assetClass of this.assetClasses) {
+      _map[assetClass.name] = assetClass;
+    }
+    return _map;
+  }
+
+  getAssetClassByName = (name) => this.assetClassesNamesMap[name];
 
   get countriesIdMap() {
     let _map = {};

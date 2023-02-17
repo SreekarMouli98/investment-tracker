@@ -12,11 +12,8 @@ import moment from "moment";
 import {
   CloseOutlined,
   DeleteOutlined,
-  LeftOutlined,
-  RightOutlined,
   SaveOutlined,
-  VerticalLeftOutlined,
-  VerticalRightOutlined,
+  PauseOutlined,
 } from "@ant-design/icons";
 import { observer } from "mobx-react-lite";
 
@@ -38,7 +35,6 @@ import {
   Modal,
   Popconfirm,
   Row,
-  Space,
   Tooltip,
   Typography,
 } from "antd";
@@ -52,27 +48,68 @@ const TRANSACTIONS_LIMIT = 15;
 
 const DATE_FORMAT = "MMM DD, YYYY";
 
+const EqualsToOutlined = () => (
+  <PauseOutlined
+    style={{
+      position: "relative",
+      left: "50%",
+      transform: "rotate(90deg) translateY(50%)",
+    }}
+  />
+);
+
+const ConversionRateInput = ({ value, onChange, ...props }) => {
+  const { sourceTicker, sourceValue, receiveTicker, disableReceiveValue } =
+    props;
+  return (
+    <Row align="middle" justify="center">
+      <Col span={10}>
+        <Input
+          type="number"
+          value={sourceValue}
+          suffix={sourceTicker}
+          disabled
+        />
+      </Col>
+      <Col span={4}>
+        <div>
+          <EqualsToOutlined />
+        </div>
+      </Col>
+      <Col span={10}>
+        <Input
+          type="number"
+          value={value}
+          suffix={receiveTicker}
+          onChange={onChange}
+          disabled={disableReceiveValue}
+        />
+      </Col>
+    </Row>
+  );
+};
+
 function Header({ onCreateTransaction }) {
   const [createTransactionModalVisible, setCreateTransactionModalVisiblity] =
     useState(false);
   const [createTransactionForm] = Form.useForm();
   const [createTransaction, { loading }] = useMutation(CREATE_TRANSACTION);
-  const [supplyAsset, setSupplyAsset] = useState({});
-  const [receiveAsset, setReceiveAsset] = useState({});
+  const supplyAsset = Form.useWatch("supplyAsset", createTransactionForm);
+  const receiveAsset = Form.useWatch("receiveAsset", createTransactionForm);
 
   const onToggleCreateTransactionModal = () => {
     createTransactionForm.resetFields();
-    setSupplyAsset({});
-    setReceiveAsset({});
     setCreateTransactionModalVisiblity(!createTransactionModalVisible);
   };
 
   const onSubmitForm = (values) => {
     let variables = {
-      supplyAssetId: supplyAsset?.id,
+      supplyAssetId: values.supplyAsset?.id,
       supplyValue: values.supplyValue,
-      receiveAssetId: receiveAsset?.id,
+      supplyBaseConvRate: values?.supplyBaseConvRate || "1",
+      receiveAssetId: values.receiveAsset?.id,
       receiveValue: values.receiveValue,
+      receiveBaseConvRate: values?.receiveBaseConvRate || "1",
       transactedAt: values.transactedAt,
     };
     createTransaction({
@@ -119,10 +156,11 @@ function Header({ onCreateTransaction }) {
         okButtonProps={{ loading }}
         onOk={() => createTransactionForm.submit()}
         onCancel={onToggleCreateTransactionModal}
+        width="650px"
       >
         <Form
-          labelCol={{ span: 6 }}
-          wrapperCol={{ span: 18 }}
+          labelCol={{ span: 10 }}
+          wrapperCol={{ span: 14 }}
           form={createTransactionForm}
           onFinish={onSubmitForm}
         >
@@ -132,18 +170,12 @@ function Header({ onCreateTransaction }) {
             required
             rules={[
               {
-                validator: () => {
-                  if (isEmpty(supplyAsset)) {
-                    return Promise.reject(
-                      new Error("Please choose the supplied asset")
-                    );
-                  }
-                  return Promise.resolve();
-                },
+                required: true,
+                message: "Please choose the supplied asset!",
               },
             ]}
           >
-            <AssetPicker asset={supplyAsset} setAsset={setSupplyAsset} />
+            <AssetPicker />
           </Form.Item>
           <Form.Item
             label="Supplied Value"
@@ -165,24 +197,38 @@ function Header({ onCreateTransaction }) {
               disabled={isEmpty(supplyAsset)}
             />
           </Form.Item>
+          {!isEmpty(supplyAsset) && supplyAsset?.ticker !== "INR" && (
+            <Form.Item
+              label="Supplied Asset Conversion Rate"
+              name="supplyBaseConvRate"
+              required
+              rules={[
+                {
+                  required: true,
+                  message: "Please provide the conversion rate!",
+                },
+              ]}
+            >
+              <ConversionRateInput
+                sourceTicker={supplyAsset?.ticker}
+                sourceValue={1}
+                receiveTicker="INR"
+                disableReceiveValue={isEmpty(supplyAsset)}
+              />
+            </Form.Item>
+          )}
           <Form.Item
             label="Received Asset"
             name="receiveAsset"
             required
             rules={[
               {
-                validator: () => {
-                  if (isEmpty(receiveAsset)) {
-                    return Promise.reject(
-                      new Error("Please choose the received asset")
-                    );
-                  }
-                  return Promise.resolve();
-                },
+                required: true,
+                message: "Please choose the received asset!",
               },
             ]}
           >
-            <AssetPicker asset={receiveAsset} setAsset={setReceiveAsset} />
+            <AssetPicker />
           </Form.Item>
           <Form.Item
             label="Received Value"
@@ -204,6 +250,26 @@ function Header({ onCreateTransaction }) {
               disabled={isEmpty(receiveAsset)}
             />
           </Form.Item>
+          {!isEmpty(receiveAsset) && receiveAsset?.ticker !== "INR" && (
+            <Form.Item
+              label="Received Asset Conversion Rate"
+              name="receiveBaseConvRate"
+              required
+              rules={[
+                {
+                  required: true,
+                  message: "Please provide the conversion rate!",
+                },
+              ]}
+            >
+              <ConversionRateInput
+                sourceTicker={receiveAsset?.ticker}
+                sourceValue={1}
+                receiveTicker="INR"
+                disableReceiveValue={isEmpty(supplyAsset)}
+              />
+            </Form.Item>
+          )}
           <Form.Item
             label="Transacted At"
             name="transactedAt"
@@ -314,6 +380,112 @@ const AssetEditor = forwardRef((props, ref) => {
   );
 });
 
+const AssetValueEditor = forwardRef((props, ref) => {
+  const [value, setValue] = useState(props.value);
+  const exitFnRef = useRef(null);
+  const [valueForm] = Form.useForm();
+  const isSupply = props?.isSupply;
+  const assetTicker = get(props.data, [
+    `${isSupply ? "supply" : "receive"}Asset`,
+    "ticker",
+  ]);
+  const valueKey = `${isSupply ? "supply" : "receive"}Value`;
+  const convRateKey = `${isSupply ? "supply" : "receive"}BaseConvRate`;
+  const valInBaseKey = `${isSupply ? "supply" : "receive"}InBase`;
+  const initFormValues = {
+    value: props.data[valueKey],
+    convRate: props.data[convRateKey],
+  };
+
+  useImperativeHandle(ref, () => {
+    return {
+      getValue() {
+        return value;
+      },
+    };
+  });
+
+  const onChange = (values) => {
+    let newValue = parseFloat(values.value);
+    let newConvRate = parseFloat(values.convRate) || 1;
+    let newValInBase = parseFloat((newValue * newConvRate).toFixed(2));
+    exitFnRef.current = exitFn;
+    setValue({
+      [valueKey]: newValue,
+      [convRateKey]: newConvRate,
+      [valInBaseKey]: newValInBase,
+    });
+  };
+
+  const exitFn = () => props.stopEditing();
+
+  useEffect(() => {
+    if (exitFnRef.current) {
+      exitFnRef.current();
+    }
+  }, [value]);
+
+  return (
+    <Modal
+      visible={true}
+      title={`Set ${isSupply ? "Supplied" : "Received"} Value`}
+      centered
+      width="auto"
+      okText="Update"
+      onOk={() => valueForm.submit()}
+      onCancel={exitFn}
+    >
+      <Form
+        form={valueForm}
+        labelCol={{ span: 10 }}
+        wrapperCol={{ span: 14 }}
+        initialValues={initFormValues}
+        onFinish={onChange}
+      >
+        <Form.Item
+          label={`${isSupply ? "Supplied" : "Received"} Value`}
+          name="value"
+          required
+          rules={[
+            {
+              required: true,
+              message: `Please provide the ${
+                isSupply ? "Supplied" : "Received"
+              } value!`,
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            suffix={truncateStringToLength(assetTicker, 10)}
+          />
+        </Form.Item>
+        {assetTicker !== "INR" && (
+          <Form.Item
+            label={`${
+              isSupply ? "Supplied" : "Received"
+            } Asset Conversion Rate`}
+            name="convRate"
+            required
+            rules={[
+              {
+                required: true,
+                message: "Please provide the conversion rate!",
+              },
+            ]}
+          >
+            <ConversionRateInput
+              sourceTicker={assetTicker}
+              sourceValue={1}
+              receiveTicker="INR"
+            />
+          </Form.Item>
+        )}
+      </Form>
+    </Modal>
+  );
+});
+
 const LedgerTable = observer(() => {
   const [pageNo, setPageNo] = useState(0);
   const { loading, data, refetch, error } = useQuery(
@@ -367,9 +539,15 @@ const LedgerTable = observer(() => {
   const assetValueRenderer = (assetKey) => (params) =>
     (
       <AssetValue
-        assetClassId={get(params.data, [assetKey, "assetClass", "id"])}
-        countryId={get(params.data, [assetKey, "country", "id"])}
+        assetTicker={get(params.data, [`${assetKey}Asset`, "ticker"])}
+        assetClassId={get(params.data, [
+          `${assetKey}Asset`,
+          "assetClass",
+          "id",
+        ])}
+        countryId={get(params.data, [`${assetKey}Asset`, "country", "id"])}
         value={params.value}
+        valueInBase={params.data[`${assetKey}InBase`]}
       />
     );
 
@@ -389,8 +567,10 @@ const LedgerTable = observer(() => {
                   transactionId: params.data.id,
                   supplyAssetId: params.data.supplyAsset.id,
                   supplyValue: params.data.supplyValue,
+                  supplyBaseConvRate: params.data.supplyBaseConvRate,
                   receiveAssetId: params.data.receiveAsset.id,
                   receiveValue: params.data.receiveValue,
+                  receiveBaseConvRate: params.data.receiveBaseConvRate,
                   transactedAt: params.data.transactedAt,
                 },
                 onCompleted: (data) => {
@@ -514,13 +694,17 @@ const LedgerTable = observer(() => {
             {
               field: "supplyValue",
               headerName: "Supplied Value",
-              cellRenderer: assetValueRenderer("supplyAsset"),
+              cellRenderer: assetValueRenderer("supply"),
               type: "rightAligned",
               editable: true,
+              cellEditor: AssetValueEditor,
+              cellEditorParams: { isSupply: true },
+              cellEditorPopup: true,
               valueSetter: (params) =>
-                ledgerTableStore.modifyTransaction(params.data.id, {
-                  supplyValue: parseFloat(params.newValue),
-                }),
+                ledgerTableStore.modifyTransaction(
+                  params.data.id,
+                  params.newValue
+                ),
               flex: 1,
             },
             {
@@ -539,13 +723,16 @@ const LedgerTable = observer(() => {
             {
               field: "receiveValue",
               headerName: "Received Value",
-              cellRenderer: assetValueRenderer("receiveAsset"),
+              cellRenderer: assetValueRenderer("receive"),
               type: "rightAligned",
               editable: true,
+              cellEditor: AssetValueEditor,
+              cellEditorPopup: true,
               valueSetter: (params) =>
-                ledgerTableStore.modifyTransaction(params.data.id, {
-                  receiveValue: parseFloat(params.newValue),
-                }),
+                ledgerTableStore.modifyTransaction(
+                  params.data.id,
+                  params.newValue
+                ),
               flex: 1,
             },
             {
@@ -569,6 +756,7 @@ const LedgerTable = observer(() => {
           isRowSelectable={() => true}
           rowSelection="multiple"
           suppressRowClickSelection={true}
+          rowHeight={75}
         />
         <TablePagination
           rowStart={pageNo * TRANSACTIONS_LIMIT + 1}

@@ -6,13 +6,11 @@ import AssetTag from "../AssetTag";
 import AssetPickerCard from "../AssetPickerCard";
 import "./style.css";
 
-function AssetPicker({ asset, setAsset }) {
+function AssetPicker({ value, onChange }) {
+  const asset = value;
+  const setAsset = onChange;
   const [modalVisible, setModalVisibility] = useState(false);
   const toggleModal = () => setModalVisibility(!modalVisible);
-  const onChange = (newAsset) => {
-    setAsset(newAsset);
-    toggleModal();
-  };
   return (
     <>
       <span onClick={toggleModal} className="asset-picker-tag">
@@ -39,7 +37,10 @@ function AssetPicker({ asset, setAsset }) {
       >
         <AssetPickerCard
           preselectedAsset={asset}
-          onChange={onChange}
+          onChange={(newAsset) => {
+            setAsset(newAsset);
+            toggleModal();
+          }}
           onCancel={toggleModal}
         />
       </Modal>
