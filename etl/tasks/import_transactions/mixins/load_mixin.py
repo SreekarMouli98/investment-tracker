@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 
 from etl.tasks.compute_holdings import run as compute_holdings_etl
@@ -7,6 +8,7 @@ from investment_tracker.services.async_tasks_services import AsyncTasksService
 
 
 class LoadMixin:
+    @transaction.atomic
     def load(self, transformed_data: dict) -> None:
         """Loads transactions to database"""
         assets = transformed_data.get("assets", [])

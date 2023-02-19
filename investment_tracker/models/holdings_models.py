@@ -7,8 +7,10 @@ class HoldingsModel(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
-    value = models.CharField(max_length=36, null=False)
+    value = models.CharField(max_length=50, null=False)
     date = models.DateTimeField(null=False)
+    average_buy = models.CharField(max_length=50, null=False)
+    value_in_base = models.CharField(max_length=50, null=False)
 
     class Meta:
         db_table = "holdings"

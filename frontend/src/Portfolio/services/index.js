@@ -197,6 +197,8 @@ export const GET_HOLDINGS_PAGINATED = gql`
       }
       value
       date
+      averageBuy
+      valueInBase
     }
     holdingsCount
   }

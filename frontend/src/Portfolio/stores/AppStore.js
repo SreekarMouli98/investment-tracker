@@ -13,6 +13,7 @@ class AppStore {
       assetClassesIdMap: computed,
       assetClassesNamesMap: computed,
       countriesIdMap: computed,
+      countriesCodesMap: computed,
     });
   }
 
@@ -50,6 +51,16 @@ class AppStore {
   }
 
   getCountryById = (id) => this.countriesIdMap[id];
+
+  get countriesCodesMap() {
+    let _map = {};
+    for (let country of this.countries) {
+      _map[country.code] = country;
+    }
+    return _map;
+  }
+
+  getCountryByCode = (code) => this.countriesCodesMap[code];
 }
 
 const defaultValue = new AppStore();

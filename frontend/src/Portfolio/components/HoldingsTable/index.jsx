@@ -8,6 +8,7 @@ import AssetTag from "../AssetTag";
 import AssetValue from "../AssetValue";
 import { Col, message, Row, Typography } from "antd";
 import TablePagination from "../TablePagination";
+import { useAppStore } from "../../stores/AppStore";
 
 const HOLDINGS_PAGE_LIMIT = 15;
 
@@ -42,6 +43,8 @@ const HoldingsTable = observer(() => {
     notifyOnNetworkStatusChange: true,
   });
   const holdingsTableRef = useRef();
+  const appStore = useAppStore();
+  const { getAssetClassByName, getCountryByCode } = appStore;
 
   if (holdingsTableRef.current?.api) {
     if (loading) {
@@ -65,8 +68,8 @@ const HoldingsTable = observer(() => {
 
   const assetValueRenderer = (params) => (
     <AssetValue
-      assetClassId={params.data?.asset?.assetClass?.id}
-      countryId={params.data?.asset?.country?.id}
+      assetClassId={params.assetClassId || params.data?.asset?.assetClass?.id}
+      countryId={params.countryId || params.data?.asset?.country?.id}
       value={params.value}
     />
   );
@@ -105,6 +108,28 @@ const HoldingsTable = observer(() => {
               field: "value",
               headerName: "Value",
               cellRenderer: assetValueRenderer,
+              type: "rightAligned",
+              flex: 1,
+            },
+            {
+              field: "averageBuy",
+              headerName: "Average Buy",
+              cellRenderer: assetValueRenderer,
+              cellRendererParams: {
+                assetClassId: getAssetClassByName("Currency")?.id,
+                countryId: getCountryByCode("IND")?.id,
+              },
+              type: "rightAligned",
+              flex: 1,
+            },
+            {
+              field: "valueInBase",
+              headerName: "Invested Amount",
+              cellRenderer: assetValueRenderer,
+              cellRendererParams: {
+                assetClassId: getAssetClassByName("Currency")?.id,
+                countryId: getCountryByCode("IND")?.id,
+              },
               type: "rightAligned",
               flex: 1,
             },

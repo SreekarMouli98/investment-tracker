@@ -30,3 +30,8 @@ def to_higher_denomination(value, asset_class_instance=None, asset_class_dict=No
     final_value = final_value / (10**decimal_places)
     final_value = round(final_value, decimal_places)
     return final_value
+
+
+def calculate_average_buy(prev_avg_buy, prev_holding_val, transacted_val, transacted_amt):
+    prev_total_amt = prev_avg_buy * prev_holding_val
+    return (prev_total_amt + transacted_amt) / (prev_holding_val + transacted_val)
