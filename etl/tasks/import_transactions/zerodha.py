@@ -9,7 +9,12 @@ from etl.tasks.import_transactions.mixins.load_mixin import LoadMixin
 from etl.utils.common_utils import decode_base64_data
 from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor, CountriesAccessor
 from investment_tracker.models import AssetsModel, TransactionsModel
-from investment_tracker.utils.transactions_utils import to_lower_denomination
+from investment_tracker.services.conversion_rates_services import ConversionRatesService
+from investment_tracker.utils.transactions_utils import (
+    get_base_asset,
+    to_higher_denomination,
+    to_lower_denomination,
+)
 
 ZERODHA_TABLE_COLS = {
     "ORDER_NO": "Order No.",
@@ -76,6 +81,7 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
             )
             assets_map[ticker] = asset
             new_assets.append(asset)
+        base_asset = get_base_asset()
         transactions_df["supply_asset"] = transactions_df.apply(
             lambda row: assets_map["INR"]
             if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
@@ -111,6 +117,38 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
         )
         transactions_df["transacted_at"] = transactions_df.apply(
             lambda row: make_aware(datetime.strptime(row[ZERODHA_TABLE_COLS["DATE"]], "%d-%m-%Y")),
+            axis=1,
+        )
+        transactions_df["supply_base_conv_rate"] = transactions_df.apply(
+            lambda row: ConversionRatesService().get_conversion_rate(
+                assets_map["INR"], base_asset, date=row["transacted_at"]
+            )
+            if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
+            else (
+                to_higher_denomination(row["receive_value"], asset_class_instance=assets_map["INR"].asset_class)
+                / to_higher_denomination(
+                    row["supply_value"],
+                    asset_class_instance=assets_map[
+                        row[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]]
+                    ].asset_class,
+                )
+            )
+            * ConversionRatesService().get_conversion_rate(assets_map["INR"], base_asset, date=row["transacted_at"]),
+            axis=1,
+        )
+        transactions_df["receive_base_conv_rate"] = transactions_df.apply(
+            lambda row: (
+                to_higher_denomination(row["supply_value"], asset_class_instance=assets_map["INR"].asset_class)
+                / to_higher_denomination(
+                    row["receive_value"],
+                    asset_class_instance=assets_map[
+                        row[ZERODHA_TABLE_COLS["SECURITY_CONTRACT_DESCRIPTION"]]
+                    ].asset_class,
+                )
+            )
+            * ConversionRatesService().get_conversion_rate(assets_map["INR"], base_asset, date=row["transacted_at"])
+            if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
+            else ConversionRatesService().get_conversion_rate(assets_map["INR"], base_asset, date=row["transacted_at"]),
             axis=1,
         )
         transactions_df = transactions_df.drop(columns=list(ZERODHA_TABLE_COLS.values()))

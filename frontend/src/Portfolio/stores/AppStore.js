@@ -4,11 +4,13 @@ import { action, computed, makeObservable, observable } from "mobx";
 class AppStore {
   assetClasses = [];
   countries = [];
+  baseAsset = null;
 
   constructor() {
     makeObservable(this, {
       assetClasses: observable,
       countries: observable,
+      baseAsset: observable,
       setSeedData: action,
       assetClassesIdMap: computed,
       assetClassesNamesMap: computed,
@@ -20,6 +22,7 @@ class AppStore {
   setSeedData = (data) => {
     this.assetClasses = data?.assetClasses || [];
     this.countries = data?.countries || [];
+    this.baseAsset = data?.baseAsset || {};
   };
 
   get assetClassesIdMap() {

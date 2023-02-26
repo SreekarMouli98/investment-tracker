@@ -31,6 +31,8 @@ services:
       - DB_PASSWORD=Password@123
       - DB_PORT=5432
       - CACHE_LOCATION=redis://redis:6379
+      - CRYPTO_CONVERSION_API_KEY=xxxx
+      - CURRENCY_CONVERSION_API_KEY=xxxx
     depends_on:
       - redis
 
@@ -53,6 +55,8 @@ services:
       - DB_PASSWORD=Password@123
       - DB_PORT=5432
       - CACHE_LOCATION=redis://redis:6379
+      - CRYPTO_CONVERSION_API_KEY=xxxx
+      - CURRENCY_CONVERSION_API_KEY=xxxx
     depends_on:
       - backend
       - redis

@@ -18,6 +18,7 @@ function TablePagination({
   onNext,
   onFirst,
   onLast,
+  width = "1015px",
 }) {
   const [newPageNo, setNewPageNo] = useState(pageNo);
 
@@ -35,7 +36,7 @@ function TablePagination({
   return (
     <div
       style={{
-        width: "1015px",
+        width,
         height: "50px",
         border: "1px solid grey",
         fontWeight: "bold",

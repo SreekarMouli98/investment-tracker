@@ -9,7 +9,8 @@ from etl.tasks.import_transactions.mixins.load_mixin import LoadMixin
 from etl.utils.common_utils import decode_base64_data
 from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor, CountriesAccessor
 from investment_tracker.models import AssetsModel, TransactionsModel
-from investment_tracker.utils.transactions_utils import to_lower_denomination
+from investment_tracker.services.conversion_rates_services import ConversionRatesService
+from investment_tracker.utils.transactions_utils import get_base_asset, to_higher_denomination, to_lower_denomination
 
 INDMONEY_TABLE_COLS = {
     "SOURCE_HOLDING_ID": "Source holding ID",
@@ -64,12 +65,13 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
             | (transactions_df[INDMONEY_TABLE_COLS["SELL_UNITS"]] != "0")
         ]
         names = set(transactions_df[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]].tolist())
-        existing_assets = AssetsAccessor().get_assets(tickers=list(names) + ["USD"])
+        existing_assets = AssetsAccessor().get_assets(tickers=list(names) + ["INR", "USD"])
         assets_map = {asset.ticker: asset for asset in existing_assets}
         missing_assets = names.difference(assets_map.keys())
         asset_type_map = transactions_df.set_index(INDMONEY_TABLE_COLS["INVESTMENT_NAME"]).to_dict()[
             INDMONEY_TABLE_COLS["ASSET_TYPE"]
         ]
+        base_asset = get_base_asset()
         new_assets = []
         for ticker in missing_assets:
             asset_type = asset_type_map[ticker]
@@ -81,14 +83,21 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
             asset = AssetsModel(name=ticker, ticker=ticker, asset_class_id=asset_class, country_id=countries_map["USA"])
             assets_map[ticker] = asset
             new_assets.append(asset)
-        transactions_df["supply_asset"] = transactions_df.apply(
+
+        get_currency_used = (
             lambda row: assets_map["USD"]
+            if asset_type_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]] == "US_STOCK"
+            else assets_map["INR"]
+        )
+
+        transactions_df["supply_asset"] = transactions_df.apply(
+            lambda row: get_currency_used(row)
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
             else assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]],
             axis=1,
         )
         transactions_df["supply_value"] = transactions_df.apply(
-            lambda row: to_lower_denomination(row[INDMONEY_TABLE_COLS["CASH_INFLOW"]], asset=assets_map["USD"])
+            lambda row: to_lower_denomination(row[INDMONEY_TABLE_COLS["CASH_INFLOW"]], asset=get_currency_used(row))
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
             else to_lower_denomination(
                 row[INDMONEY_TABLE_COLS["SELL_UNITS"]],
@@ -99,7 +108,7 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
         transactions_df["receive_asset"] = transactions_df.apply(
             lambda row: assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]]
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
-            else assets_map["USD"],
+            else get_currency_used(row),
             axis=1,
         )
         transactions_df["receive_value"] = transactions_df.apply(
@@ -108,11 +117,51 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
                 asset=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]],
             )
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
-            else to_lower_denomination(row[INDMONEY_TABLE_COLS["CASH_OUTFLOW"]], asset=assets_map["USD"]) * -1,
+            else to_lower_denomination(row[INDMONEY_TABLE_COLS["CASH_OUTFLOW"]], asset=get_currency_used(row)) * -1,
             axis=1,
         )
         transactions_df["transacted_at"] = transactions_df.apply(
             lambda row: make_aware(datetime.strptime(row[INDMONEY_TABLE_COLS["TRADE_DATE"]], "%Y-%m-%d")),
+            axis=1,
+        )
+        transactions_df["supply_base_conv_rate"] = transactions_df.apply(
+            lambda row: ConversionRatesService().get_conversion_rate(
+                get_currency_used(row), base_asset, date=row["transacted_at"]
+            )
+            if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
+            else (
+                to_higher_denomination(
+                    row["receive_value"],
+                    asset_class_instance=get_currency_used(row).asset_class,
+                )
+                / to_higher_denomination(
+                    row["supply_value"],
+                    asset_class_instance=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]].asset_class,
+                )
+            )
+            * ConversionRatesService().get_conversion_rate(
+                get_currency_used(row), base_asset, date=row["transacted_at"]
+            ),
+            axis=1,
+        )
+        transactions_df["receive_base_conv_rate"] = transactions_df.apply(
+            lambda row: (
+                to_higher_denomination(
+                    row["supply_value"],
+                    asset_class_instance=get_currency_used(row).asset_class,
+                )
+                / to_higher_denomination(
+                    row["receive_value"],
+                    asset_class_instance=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]].asset_class,
+                )
+            )
+            * ConversionRatesService().get_conversion_rate(
+                get_currency_used(row), base_asset, date=row["transacted_at"]
+            )
+            if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
+            else ConversionRatesService().get_conversion_rate(
+                get_currency_used(row), base_asset, date=row["transacted_at"]
+            ),
             axis=1,
         )
         transactions_df = transactions_df.drop(columns=list(INDMONEY_TABLE_COLS.values()))

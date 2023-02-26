@@ -43,6 +43,7 @@ import { normalizeDate, truncateStringToLength } from "../../utils";
 import AssetPickerCard from "../AssetPickerCard";
 import AssetPicker from "../AssetPicker";
 import TablePagination from "../TablePagination";
+import { useAppStore } from "../../stores/AppStore";
 
 const TRANSACTIONS_LIMIT = 15;
 
@@ -89,13 +90,15 @@ const ConversionRateInput = ({ value, onChange, ...props }) => {
   );
 };
 
-function Header({ onCreateTransaction }) {
+const Header = observer(({ onCreateTransaction }) => {
   const [createTransactionModalVisible, setCreateTransactionModalVisiblity] =
     useState(false);
   const [createTransactionForm] = Form.useForm();
   const [createTransaction, { loading }] = useMutation(CREATE_TRANSACTION);
   const supplyAsset = Form.useWatch("supplyAsset", createTransactionForm);
   const receiveAsset = Form.useWatch("receiveAsset", createTransactionForm);
+  const appStore = useAppStore();
+  const { baseAsset } = appStore;
 
   const onToggleCreateTransactionModal = () => {
     createTransactionForm.resetFields();
@@ -197,26 +200,27 @@ function Header({ onCreateTransaction }) {
               disabled={isEmpty(supplyAsset)}
             />
           </Form.Item>
-          {!isEmpty(supplyAsset) && supplyAsset?.ticker !== "INR" && (
-            <Form.Item
-              label="Supplied Asset Conversion Rate"
-              name="supplyBaseConvRate"
-              required
-              rules={[
-                {
-                  required: true,
-                  message: "Please provide the conversion rate!",
-                },
-              ]}
-            >
-              <ConversionRateInput
-                sourceTicker={supplyAsset?.ticker}
-                sourceValue={1}
-                receiveTicker="INR"
-                disableReceiveValue={isEmpty(supplyAsset)}
-              />
-            </Form.Item>
-          )}
+          {!isEmpty(supplyAsset) &&
+            supplyAsset?.ticker !== baseAsset.ticker && (
+              <Form.Item
+                label="Supplied Asset Conversion Rate"
+                name="supplyBaseConvRate"
+                required
+                rules={[
+                  {
+                    required: true,
+                    message: "Please provide the conversion rate!",
+                  },
+                ]}
+              >
+                <ConversionRateInput
+                  sourceTicker={supplyAsset?.ticker}
+                  sourceValue={1}
+                  receiveTicker={baseAsset.ticker}
+                  disableReceiveValue={isEmpty(supplyAsset)}
+                />
+              </Form.Item>
+            )}
           <Form.Item
             label="Received Asset"
             name="receiveAsset"
@@ -250,26 +254,27 @@ function Header({ onCreateTransaction }) {
               disabled={isEmpty(receiveAsset)}
             />
           </Form.Item>
-          {!isEmpty(receiveAsset) && receiveAsset?.ticker !== "INR" && (
-            <Form.Item
-              label="Received Asset Conversion Rate"
-              name="receiveBaseConvRate"
-              required
-              rules={[
-                {
-                  required: true,
-                  message: "Please provide the conversion rate!",
-                },
-              ]}
-            >
-              <ConversionRateInput
-                sourceTicker={receiveAsset?.ticker}
-                sourceValue={1}
-                receiveTicker="INR"
-                disableReceiveValue={isEmpty(supplyAsset)}
-              />
-            </Form.Item>
-          )}
+          {!isEmpty(receiveAsset) &&
+            receiveAsset?.ticker !== baseAsset.ticker && (
+              <Form.Item
+                label="Received Asset Conversion Rate"
+                name="receiveBaseConvRate"
+                required
+                rules={[
+                  {
+                    required: true,
+                    message: "Please provide the conversion rate!",
+                  },
+                ]}
+              >
+                <ConversionRateInput
+                  sourceTicker={receiveAsset?.ticker}
+                  sourceValue={1}
+                  receiveTicker={baseAsset.ticker}
+                  disableReceiveValue={isEmpty(supplyAsset)}
+                />
+              </Form.Item>
+            )}
           <Form.Item
             label="Transacted At"
             name="transactedAt"
@@ -290,7 +295,7 @@ function Header({ onCreateTransaction }) {
       </Modal>
     </div>
   );
-}
+});
 
 const DateEditor = forwardRef((props, ref) => {
   const [value, setValue] = useState(moment(props.value));
@@ -380,111 +385,115 @@ const AssetEditor = forwardRef((props, ref) => {
   );
 });
 
-const AssetValueEditor = forwardRef((props, ref) => {
-  const [value, setValue] = useState(props.value);
-  const exitFnRef = useRef(null);
-  const [valueForm] = Form.useForm();
-  const isSupply = props?.isSupply;
-  const assetTicker = get(props.data, [
-    `${isSupply ? "supply" : "receive"}Asset`,
-    "ticker",
-  ]);
-  const valueKey = `${isSupply ? "supply" : "receive"}Value`;
-  const convRateKey = `${isSupply ? "supply" : "receive"}BaseConvRate`;
-  const valInBaseKey = `${isSupply ? "supply" : "receive"}InBase`;
-  const initFormValues = {
-    value: props.data[valueKey],
-    convRate: props.data[convRateKey],
-  };
-
-  useImperativeHandle(ref, () => {
-    return {
-      getValue() {
-        return value;
-      },
+const AssetValueEditor = observer(
+  forwardRef((props, ref) => {
+    const [value, setValue] = useState(props.value);
+    const exitFnRef = useRef(null);
+    const [valueForm] = Form.useForm();
+    const isSupply = props?.isSupply;
+    const assetTicker = get(props.data, [
+      `${isSupply ? "supply" : "receive"}Asset`,
+      "ticker",
+    ]);
+    const valueKey = `${isSupply ? "supply" : "receive"}Value`;
+    const convRateKey = `${isSupply ? "supply" : "receive"}BaseConvRate`;
+    const valInBaseKey = `${isSupply ? "supply" : "receive"}InBase`;
+    const initFormValues = {
+      value: props.data[valueKey],
+      convRate: props.data[convRateKey],
     };
-  });
+    const appStore = useAppStore();
+    const { baseAsset } = appStore;
 
-  const onChange = (values) => {
-    let newValue = parseFloat(values.value);
-    let newConvRate = parseFloat(values.convRate) || 1;
-    let newValInBase = parseFloat((newValue * newConvRate).toFixed(2));
-    exitFnRef.current = exitFn;
-    setValue({
-      [valueKey]: newValue,
-      [convRateKey]: newConvRate,
-      [valInBaseKey]: newValInBase,
+    useImperativeHandle(ref, () => {
+      return {
+        getValue() {
+          return value;
+        },
+      };
     });
-  };
 
-  const exitFn = () => props.stopEditing();
+    const onChange = (values) => {
+      let newValue = parseFloat(values.value);
+      let newConvRate = parseFloat(values.convRate) || 1;
+      let newValInBase = parseFloat((newValue * newConvRate).toFixed(2));
+      exitFnRef.current = exitFn;
+      setValue({
+        [valueKey]: newValue,
+        [convRateKey]: newConvRate,
+        [valInBaseKey]: newValInBase,
+      });
+    };
 
-  useEffect(() => {
-    if (exitFnRef.current) {
-      exitFnRef.current();
-    }
-  }, [value]);
+    const exitFn = () => props.stopEditing();
 
-  return (
-    <Modal
-      visible={true}
-      title={`Set ${isSupply ? "Supplied" : "Received"} Value`}
-      centered
-      width="auto"
-      okText="Update"
-      onOk={() => valueForm.submit()}
-      onCancel={exitFn}
-    >
-      <Form
-        form={valueForm}
-        labelCol={{ span: 10 }}
-        wrapperCol={{ span: 14 }}
-        initialValues={initFormValues}
-        onFinish={onChange}
+    useEffect(() => {
+      if (exitFnRef.current) {
+        exitFnRef.current();
+      }
+    }, [value]);
+
+    return (
+      <Modal
+        visible={true}
+        title={`Set ${isSupply ? "Supplied" : "Received"} Value`}
+        centered
+        width="auto"
+        okText="Update"
+        onOk={() => valueForm.submit()}
+        onCancel={exitFn}
       >
-        <Form.Item
-          label={`${isSupply ? "Supplied" : "Received"} Value`}
-          name="value"
-          required
-          rules={[
-            {
-              required: true,
-              message: `Please provide the ${
-                isSupply ? "Supplied" : "Received"
-              } value!`,
-            },
-          ]}
+        <Form
+          form={valueForm}
+          labelCol={{ span: 10 }}
+          wrapperCol={{ span: 14 }}
+          initialValues={initFormValues}
+          onFinish={onChange}
         >
-          <Input
-            type="number"
-            suffix={truncateStringToLength(assetTicker, 10)}
-          />
-        </Form.Item>
-        {assetTicker !== "INR" && (
           <Form.Item
-            label={`${
-              isSupply ? "Supplied" : "Received"
-            } Asset Conversion Rate`}
-            name="convRate"
+            label={`${isSupply ? "Supplied" : "Received"} Value`}
+            name="value"
             required
             rules={[
               {
                 required: true,
-                message: "Please provide the conversion rate!",
+                message: `Please provide the ${
+                  isSupply ? "Supplied" : "Received"
+                } value!`,
               },
             ]}
           >
-            <ConversionRateInput
-              sourceTicker={assetTicker}
-              sourceValue={1}
-              receiveTicker="INR"
+            <Input
+              type="number"
+              suffix={truncateStringToLength(assetTicker, 10)}
             />
           </Form.Item>
-        )}
-      </Form>
-    </Modal>
-  );
-});
+          {assetTicker !== baseAsset.ticker && (
+            <Form.Item
+              label={`${
+                isSupply ? "Supplied" : "Received"
+              } Asset Conversion Rate`}
+              name="convRate"
+              required
+              rules={[
+                {
+                  required: true,
+                  message: "Please provide the conversion rate!",
+                },
+              ]}
+            >
+              <ConversionRateInput
+                sourceTicker={assetTicker}
+                sourceValue={1}
+                receiveTicker={baseAsset.ticker}
+              />
+            </Form.Item>
+          )}
+        </Form>
+      </Modal>
+    );
+  })
+);
 
 const LedgerTable = observer(() => {
   const [pageNo, setPageNo] = useState(0);

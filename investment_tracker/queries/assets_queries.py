@@ -2,6 +2,7 @@ import graphene
 
 from investment_tracker.schema.assets_schema import AssetClassesType, AssetsType
 from investment_tracker.accessors.assets_accessors import AssetClassesAccessor, AssetsAccessor
+from investment_tracker.utils.transactions_utils import get_base_asset
 
 
 class AssetsQuery(graphene.ObjectType):
@@ -19,6 +20,7 @@ class AssetsQuery(graphene.ObjectType):
         countries=graphene.List(graphene.String),
         search_text=graphene.String(),
     )
+    base_asset = graphene.Field(AssetsType)
 
     def resolve_asset_classes(self, info):
         return AssetClassesAccessor().get_asset_classes()
@@ -39,3 +41,6 @@ class AssetsQuery(graphene.ObjectType):
             countries=countries,
             search_text=search_text,
         )
+
+    def resolve_base_asset(self, info):
+        return get_base_asset()

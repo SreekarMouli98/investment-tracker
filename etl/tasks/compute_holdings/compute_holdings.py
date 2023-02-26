@@ -5,23 +5,26 @@ from django.db import transaction
 from etl.tasks.base_etl import ETL
 from investment_tracker.accessors import HoldingsAccessor, TransactionsAccessor
 from investment_tracker.models.holdings_models import HoldingsModel
-from investment_tracker.utils.transactions_utils import calculate_average_buy, to_higher_denomination
+from investment_tracker.utils.transactions_utils import calculate_average_buy, get_base_asset, to_higher_denomination
 
 
 class ComputeHoldingsETL(ETL):
     def extract(self, start_date):
+        base_asset = get_base_asset()
         depricate_holdings = HoldingsAccessor().get_holdings(after_date=start_date, id_only=True)
         previous_holdings = HoldingsAccessor().get_latest_holding_before_date(start_date)
         transactions_from_start_date = TransactionsAccessor().get_transactions(
             after_date=start_date, order_by=["transacted_at"]
         )
         return {
+            "base_asset": base_asset,
             "depricate_holdings": depricate_holdings,
             "previous_holdings": previous_holdings,
             "transactions_from_start_date": transactions_from_start_date,
         }
 
     def transform(self, data):
+        base_asset = data["base_asset"]
         depricate_holdings = data["depricate_holdings"]
         previous_holdings = data["previous_holdings"]
         transactions_from_start_date = data["transactions_from_start_date"]
@@ -50,7 +53,7 @@ class ComputeHoldingsETL(ETL):
                 )
                 holdings_map[receive_asset]["value"] += receive_value
             for asset, holding in holdings_map.items():
-                if asset.ticker != "INR":
+                if asset.ticker != base_asset.ticker:
                     new_holdings.append(
                         HoldingsModel(
                             asset=asset,

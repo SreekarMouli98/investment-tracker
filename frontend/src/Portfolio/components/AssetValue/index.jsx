@@ -1,74 +1,73 @@
 import { Tooltip } from "antd";
+import { observer } from "mobx-react-lite";
 
 import { useAppStore } from "../../stores/AppStore";
 import { formatAssetValue } from "../../utils";
 
-function AssetValue({
-  assetClassId,
-  assetTicker,
-  countryId,
-  value,
-  valueInBase,
-}) {
-  const appStore = useAppStore();
+const AssetValue = observer(
+  ({ assetClassId, assetTicker, countryId, value, valueInBase }) => {
+    const appStore = useAppStore();
 
-  const assetClass = appStore.getAssetClassById(assetClassId);
+    const { baseAsset } = appStore;
 
-  if (!assetClass) return <>?</>;
+    const showBaseConversion = assetTicker !== baseAsset.ticker;
 
-  const baseAssetClass = appStore.getAssetClassByName("Currency");
+    const assetClass = appStore.getAssetClassById(assetClassId);
 
-  const country = appStore.getCountryById(countryId) || {};
+    if (!assetClass) return <>?</>;
 
-  const fullValue = formatAssetValue(
-    value,
-    assetClass.name,
-    country?.code,
-    assetClass.decimalPlaces
-  );
+    const country = appStore.getCountryById(countryId) || {};
 
-  const shortValue = formatAssetValue(value, assetClass.name, country?.code);
-
-  let fullValueInBase, shortValueInBase;
-
-  if (assetTicker !== "INR") {
-    fullValueInBase = formatAssetValue(
-      valueInBase,
-      baseAssetClass.name,
-      "IND",
-      baseAssetClass.decimalPlaces
+    const fullValue = formatAssetValue(
+      value,
+      assetClass.name,
+      country?.code,
+      assetClass.decimalPlaces
     );
 
-    shortValueInBase = formatAssetValue(
-      valueInBase,
-      baseAssetClass.name,
-      "IND"
+    const shortValue = formatAssetValue(value, assetClass.name, country?.code);
+
+    let fullValueInBase, shortValueInBase;
+
+    if (showBaseConversion) {
+      fullValueInBase = formatAssetValue(
+        valueInBase,
+        baseAsset.assetClass.name,
+        baseAsset.country.code,
+        baseAsset.assetClass.decimalPlaces
+      );
+
+      shortValueInBase = formatAssetValue(
+        valueInBase,
+        baseAsset.assetClass.name,
+        baseAsset.country.code
+      );
+    }
+
+    return (
+      <div>
+        <Tooltip title={fullValue}>
+          <span>{shortValue}</span>
+        </Tooltip>
+        {showBaseConversion && (
+          <>
+            <br />
+            <Tooltip title={fullValueInBase}>
+              <span
+                style={{
+                  fontStyle: "italic",
+                  fontWeight: "lighter",
+                  fontSize: "small",
+                }}
+              >
+                {shortValueInBase}
+              </span>
+            </Tooltip>
+          </>
+        )}
+      </div>
     );
   }
-
-  return (
-    <div>
-      <Tooltip title={fullValue}>
-        <span>{shortValue}</span>
-      </Tooltip>
-      {assetTicker !== "INR" && (
-        <>
-          <br />
-          <Tooltip title={fullValueInBase}>
-            <span
-              style={{
-                fontStyle: "italic",
-                fontWeight: "lighter",
-                fontSize: "small",
-              }}
-            >
-              {shortValueInBase}
-            </span>
-          </Tooltip>
-        </>
-      )}
-    </div>
-  );
-}
+);
 
 export default AssetValue;

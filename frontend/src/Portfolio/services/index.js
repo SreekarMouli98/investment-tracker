@@ -12,6 +12,20 @@ export const APP_SEED_DATA = gql`
       name
       code
     }
+    baseAsset {
+      name
+      ticker
+      assetClass {
+        id
+        name
+        decimalPlaces
+      }
+      country {
+        id
+        name
+        code
+      }
+    }
   }
 `;
 
@@ -79,6 +93,9 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
         assetClass {
           id
         }
+        country {
+          id
+        }
       }
       supplyValue
       supplyBaseConvRate
@@ -88,6 +105,9 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
         name
         ticker
         assetClass {
+          id
+        }
+        country {
           id
         }
       }
@@ -176,7 +196,24 @@ export const GET_TASK_BY_ID_OR_LATEST = gql`
       createdAt
       startedAt
       endedAt
+      metaData
     }
+  }
+`;
+
+export const GET_TASKS_PAGINATED = gql`
+  query getTasks($limit: Int, $offset: Int) {
+    tasks(limit: $limit, offset: $offset) {
+      id
+      taskName
+      status
+      percentage
+      createdAt
+      startedAt
+      endedAt
+      metaData
+    }
+    tasksCount
   }
 `;
 

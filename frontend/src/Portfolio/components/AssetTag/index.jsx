@@ -1,9 +1,10 @@
 import { Tag, Tooltip } from "antd";
+import { observer } from "mobx-react-lite";
 
 import { useAppStore } from "../../stores/AppStore";
 import { truncateStringToLength } from "../../utils";
 
-function AssetTag({ ticker, name, assetClassId }) {
+const AssetTag = observer(({ ticker, name, assetClassId }) => {
   const appStore = useAppStore();
 
   const assetClass = appStore.getAssetClassById(assetClassId) || {};
@@ -44,6 +45,6 @@ function AssetTag({ ticker, name, assetClassId }) {
       </div>
     </Tooltip>
   );
-}
+});
 
 export default AssetTag;

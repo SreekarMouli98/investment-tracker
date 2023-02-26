@@ -74,7 +74,7 @@ const FilterGroup = ({ groupName, options, selectedList, setSelectedList }) => {
   );
 };
 
-function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
+const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
   const appStore = useAppStore();
   const [assetsList, setAssetsList] = useState([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -140,18 +140,18 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
 
   const delayedSearch = debounce(onSearch, 500);
 
-  const observer = useRef(null);
+  const scrollObserver = useRef(null);
   const listEndRef = useCallback(
     (node) => {
       if (loading) return;
       if (!hasMore) return;
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
+      if (scrollObserver.current) scrollObserver.current.disconnect();
+      scrollObserver.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
           setPageNo(pageNo + 1);
         }
       });
-      if (node) observer.current.observe(node);
+      if (node) scrollObserver.current.observe(node);
     },
     [loading, hasMore, pageNo]
   );
@@ -356,6 +356,6 @@ function AssetPickerCard({ preselectedAsset, onChange, onCancel }) {
       </Tooltip>
     </Card>
   );
-}
+});
 
-export default observer(AssetPickerCard);
+export default AssetPickerCard;

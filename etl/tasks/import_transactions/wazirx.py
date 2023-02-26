@@ -1,4 +1,5 @@
 import pandas as pd
+import pydash
 from datetime import datetime
 from django.utils.timezone import make_aware
 from io import BytesIO
@@ -9,7 +10,8 @@ from etl.tasks.import_transactions.mixins.load_mixin import LoadMixin
 from etl.utils.common_utils import decode_base64_data
 from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor
 from investment_tracker.models import AssetsModel, TransactionsModel
-from investment_tracker.utils.transactions_utils import to_lower_denomination
+from investment_tracker.services.conversion_rates_services import ConversionRatesService
+from investment_tracker.utils.transactions_utils import get_base_asset, to_lower_denomination
 
 
 EXCHANGE_TRADES_TABLE_COLS = {
@@ -98,6 +100,7 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
             asset = AssetsModel(name=ticker, ticker=ticker, asset_class_id=asset_classes_map["Crypto"])
             assets_map[ticker] = asset
             new_assets.append(asset)
+        base_asset = get_base_asset()
         transactions_df["supply_asset"] = transactions_df.apply(lambda row: assets_map[row["supply_asset"]], axis=1)
         transactions_df["supply_value"] = transactions_df.apply(
             lambda row: to_lower_denomination(
@@ -114,7 +117,42 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
             lambda row: make_aware(datetime.strptime(row[EXCHANGE_TRADES_TABLE_COLS["DATE"]], "%Y-%m-%d %H:%M:%S")),
             axis=1,
         )
+        conversion_rates = []
+        failed_conversions = []
+        transactions_df["supply_base_conv_rate"] = transactions_df.apply(
+            lambda row: to_lower_denomination(row[EXCHANGE_TRADES_TABLE_COLS["PRICE"]], asset=base_asset)
+            if row["receive_asset"] == base_asset
+            else ConversionRatesService().get_conversion_rate(
+                row["supply_asset"],
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            ),
+            axis=1,
+        )
+        transactions_df["receive_base_conv_rate"] = transactions_df.apply(
+            lambda row: to_lower_denomination(1, asset=base_asset)
+            if row["receive_asset"] == base_asset
+            else ConversionRatesService().get_conversion_rate(
+                row["receive_asset"],
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            ),
+            axis=1,
+        )
+        failed_conversions = [f"{from_asset.ticker}/{to_asset.ticker}" for from_asset, to_asset in failed_conversions]
+        failed_conversions = pydash.uniq(failed_conversions)
         transactions_df = transactions_df.drop(columns=list(EXCHANGE_TRADES_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
-        return {"transactions": transactions, "assets": new_assets}
+        return {
+            "transactions": transactions,
+            "assets": new_assets,
+            "conversion_rates": conversion_rates,
+            "failed_conversions": failed_conversions,
+        }

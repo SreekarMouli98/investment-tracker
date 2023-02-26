@@ -14,6 +14,7 @@ class AsyncTasksModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=False)
     started_at = models.DateTimeField(null=True)
     ended_at = models.DateTimeField(null=True)
+    meta_data = models.JSONField(null=True)
 
     class Meta:
         db_table = "async_tasks"
