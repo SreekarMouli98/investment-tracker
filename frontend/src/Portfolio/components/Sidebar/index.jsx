@@ -53,6 +53,7 @@ function Sidebar() {
             type="link"
             block
             style={{ height: "64px", marginBottom: "10px" }}
+            onClick={() => navigate("/")}
           />
         </div>
         <Menu
