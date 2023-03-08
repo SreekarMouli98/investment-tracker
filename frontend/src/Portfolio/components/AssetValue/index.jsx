@@ -1,27 +1,73 @@
 import { Tooltip } from "antd";
+import { observer } from "mobx-react-lite";
 
 import { useAppStore } from "../../stores/AppStore";
 import { formatAssetValue } from "../../utils";
 
-function AssetValue({ assetClassId, countryId, value }) {
-  const appStore = useAppStore();
+const AssetValue = observer(
+  ({ assetClassId, assetTicker, countryId, value, valueInBase }) => {
+    const appStore = useAppStore();
 
-  const assetClass = appStore.getAssetClassById(assetClassId);
+    const { baseAsset } = appStore;
 
-  if (!assetClass) return <>?</>;
+    const showBaseConversion = assetTicker !== baseAsset.ticker;
 
-  const country = appStore.getCountryById(countryId) || {};
+    const assetClass = appStore.getAssetClassById(assetClassId);
 
-  const fullValue = formatAssetValue(
-    value,
-    assetClass.name,
-    country?.code,
-    assetClass.decimalPlaces
-  );
+    if (!assetClass) return <>?</>;
 
-  const shortValue = formatAssetValue(value, assetClass.name, country?.code);
+    const country = appStore.getCountryById(countryId) || {};
 
-  return <Tooltip title={fullValue}>{shortValue}</Tooltip>;
-}
+    const fullValue = formatAssetValue(
+      value,
+      assetClass.name,
+      country?.code,
+      assetClass.decimalPlaces
+    );
+
+    const shortValue = formatAssetValue(value, assetClass.name, country?.code);
+
+    let fullValueInBase, shortValueInBase;
+
+    if (showBaseConversion) {
+      fullValueInBase = formatAssetValue(
+        valueInBase,
+        baseAsset.assetClass.name,
+        baseAsset.country.code,
+        baseAsset.assetClass.decimalPlaces
+      );
+
+      shortValueInBase = formatAssetValue(
+        valueInBase,
+        baseAsset.assetClass.name,
+        baseAsset.country.code
+      );
+    }
+
+    return (
+      <div>
+        <Tooltip title={fullValue}>
+          <span>{shortValue}</span>
+        </Tooltip>
+        {showBaseConversion && (
+          <>
+            <br />
+            <Tooltip title={fullValueInBase}>
+              <span
+                style={{
+                  fontStyle: "italic",
+                  fontWeight: "lighter",
+                  fontSize: "small",
+                }}
+              >
+                {shortValueInBase}
+              </span>
+            </Tooltip>
+          </>
+        )}
+      </div>
+    );
+  }
+);
 
 export default AssetValue;

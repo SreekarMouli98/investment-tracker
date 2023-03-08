@@ -27,8 +27,8 @@ def run(async_task_id: int, source: str, source_data: str) -> None:
         AsyncTasksService().update_progress(async_task_id, 50)
         transformed_data = etl_service.transform(extracted_data)
         AsyncTasksService().update_progress(async_task_id, 75)
-        etl_service.load(transformed_data)
-        AsyncTasksService().set_completed(async_task_id)
+        (warnings,) = etl_service.load(transformed_data)
+        AsyncTasksService().set_completed(async_task_id, warnings=warnings)
     except Exception as ex:
         traceback.print_exc()
         AsyncTasksService().set_failed(async_task_id)

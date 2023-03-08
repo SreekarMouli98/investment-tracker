@@ -2,15 +2,18 @@ import moment from "moment";
 import {
   CheckOutlined,
   ExclamationCircleOutlined,
+  FieldTimeOutlined,
   LoadingOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
 import { useLazyQuery } from "@apollo/client";
 import {
+  Alert,
   Button,
   Card,
   Col,
   Divider,
+  Drawer,
   Form,
   message,
   Progress,
@@ -20,18 +23,22 @@ import {
   Upload,
 } from "antd";
 import { includes } from "lodash";
+import { useEffect, useState } from "react";
 
 import { GET_TASK_BY_ID_OR_LATEST, IMPORT_TRANSACTIONS } from "../../services";
 import PageLoading from "../../components/PageLoading";
-import { useEffect, useState } from "react";
+import TasksTable from "../../components/TasksTable";
 
 const POLL_INTERVAL = 2000;
+const DATE_FORMAT = "MMM Do YYYY, h:mm:ss a";
 
 function Task({ loading, task }) {
   const getTaskTitle = () => {
     switch (task?.taskName) {
       case "IMPORT_TRANSACTIONS":
         return "Importing Transactions...";
+      case "COMPUTE_HOLDINGS":
+        return "Computing Holdings...";
       default:
         return "Recent Task...";
     }
@@ -72,31 +79,42 @@ function Task({ loading, task }) {
   return (
     <Card
       title={title}
-      style={{ width: "500px", fontStyle: "italic" }}
+      style={{ width: "650px", fontStyle: "italic" }}
       extra={getCardIcon()}
     >
       {loading ? (
         <PageLoading />
       ) : (
-        <Row align="middle">
-          <Col span={24}>
-            <Progress percent={task?.percentage} status={progressStatus} />
-          </Col>
-          <Col span={24}>
-            <Typography>
-              Started at{" "}
-              {moment(task?.createdAt).format("dddd, MMMM Do YYYY, h:mm:ss a")}
-            </Typography>
-          </Col>
-          {task?.endedAt && (
-            <Col span={24}>
-              <Typography>
-                Ended at{" "}
-                {moment(task.endedAt).format("dddd, MMMM Do YYYY, h:mm:ss a")}
-              </Typography>
+        <div>
+          <Row>
+            <Col span={4}>Task ID</Col>
+            <Col span={20}>Progress</Col>
+            <Col span={4}>{task?.id}</Col>
+            <Col span={20}>
+              <Progress percent={task?.percentage} status={progressStatus} />
             </Col>
+          </Row>
+          <br />
+          <Row>
+            <Col span={12}>Started At</Col>
+            <Col span={12}>{task?.endedAt ? "Ended At" : ""}</Col>
+            <Col span={12}>{moment(task?.createdAt).format(DATE_FORMAT)}</Col>
+            <Col span={12}>
+              {task?.endedAt ? moment(task.endedAt).format(DATE_FORMAT) : ""}
+            </Col>
+          </Row>
+          <br />
+          {task?.metaData?.warnings?.length > 0 && (
+            <div>
+              {task.metaData.warnings.map((warning, i) => (
+                <>
+                  <Alert key={i} message={warning} type="warning" showIcon />
+                  <br />
+                </>
+              ))}
+            </div>
           )}
-        </Row>
+        </div>
       )}
     </Card>
   );
@@ -157,10 +175,10 @@ function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
     <Card title={<Typography.Title>Import Transactions</Typography.Title>}>
       <Form
         labelCol={{
-          span: 8,
+          span: 4,
         }}
         wrapperCol={{
-          span: 16,
+          span: 20,
         }}
         onFinish={onFormSubmitted}
         disabled={loading || isTaskPending}
@@ -203,8 +221,8 @@ function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
         )}
         <Form.Item
           wrapperCol={{
-            offset: 8,
-            span: 16,
+            offset: 4,
+            span: 20,
           }}
         >
           <Button htmlType="submit" loading={isTaskPending}>
@@ -213,6 +231,29 @@ function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
         </Form.Item>
       </Form>
     </Card>
+  );
+}
+
+function PastTasks() {
+  const [drawerVisible, setDrawerVisibility] = useState(false);
+
+  const toggleTable = () => setDrawerVisibility(!drawerVisible);
+
+  return (
+    <div>
+      <Button type="link" onClick={toggleTable}>
+        <FieldTimeOutlined /> Show past tasks
+      </Button>
+      <Drawer
+        title="Past Tasks"
+        visible={drawerVisible}
+        placement="right"
+        onClose={toggleTable}
+        width="90%"
+      >
+        <TasksTable doRefetch={drawerVisible} />
+      </Drawer>
+    </div>
   );
 }
 
@@ -262,7 +303,7 @@ function Integrations() {
         )}
       </Row>
       <Row>
-        <Col span={8}>
+        <Col xs={24} lg={12}>
           <ImportTransactions
             getTaskByIdOrLatest={getTaskByIdOrLatest}
             loading={loading}
@@ -270,6 +311,8 @@ function Integrations() {
           />
         </Col>
       </Row>
+      <br />
+      <PastTasks />
     </div>
   );
 }

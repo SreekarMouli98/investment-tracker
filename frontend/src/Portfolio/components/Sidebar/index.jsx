@@ -4,6 +4,7 @@ import {
   ApiOutlined,
   DollarCircleOutlined,
   FileTextOutlined,
+  PieChartOutlined,
 } from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -20,6 +21,11 @@ function Sidebar() {
 
   const menuOptions = [
     {
+      key: "holdings",
+      label: "Holdings",
+      icon: <PieChartOutlined />,
+    },
+    {
       key: "ledger",
       label: "Ledger",
       icon: <FileTextOutlined />,
@@ -32,7 +38,9 @@ function Sidebar() {
   ];
 
   useEffect(() => {
-    if (location.pathname.startsWith("/ledger")) {
+    if (location.pathname.startsWith("/holdings")) {
+      setSelected("holdings");
+    } else if (location.pathname.startsWith("/ledger")) {
       setSelected("ledger");
     } else if (location.pathname.startsWith("/integrations")) {
       setSelected("integrations");

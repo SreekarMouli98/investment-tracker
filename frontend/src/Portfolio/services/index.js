@@ -12,6 +12,20 @@ export const APP_SEED_DATA = gql`
       name
       code
     }
+    baseAsset {
+      name
+      ticker
+      assetClass {
+        id
+        name
+        decimalPlaces
+      }
+      country {
+        id
+        name
+        code
+      }
+    }
   }
 `;
 
@@ -79,8 +93,13 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
         assetClass {
           id
         }
+        country {
+          id
+        }
       }
       supplyValue
+      supplyBaseConvRate
+      supplyInBase
       receiveAsset {
         id
         name
@@ -88,8 +107,13 @@ export const GET_TRANSACTIONS_PAGINATED = gql`
         assetClass {
           id
         }
+        country {
+          id
+        }
       }
       receiveValue
+      receiveBaseConvRate
+      receiveInBase
       transactedAt
     }
     transactionsCount
@@ -100,15 +124,19 @@ export const CREATE_TRANSACTION = gql`
   mutation createTransaction(
     $supplyAssetId: ID!
     $supplyValue: Float!
+    $supplyBaseConvRate: Float!
     $receiveAssetId: ID!
     $receiveValue: Float!
+    $receiveBaseConvRate: Float!
     $transactedAt: DateTime!
   ) {
     createTransaction(
       supplyAssetId: $supplyAssetId
       supplyValue: $supplyValue
+      supplyBaseConvRate: $supplyBaseConvRate
       receiveAssetId: $receiveAssetId
       receiveValue: $receiveValue
+      receiveBaseConvRate: $receiveBaseConvRate
       transactedAt: $transactedAt
     ) {
       transaction {
@@ -123,16 +151,20 @@ export const UPDATE_TRANSACTION = gql`
     $transactionId: ID!
     $supplyAssetId: ID!
     $supplyValue: Float!
+    $supplyBaseConvRate: Float!
     $receiveAssetId: ID!
     $receiveValue: Float!
+    $receiveBaseConvRate: Float!
     $transactedAt: DateTime!
   ) {
     updateTransaction(
       transactionId: $transactionId
       supplyAssetId: $supplyAssetId
       supplyValue: $supplyValue
+      supplyBaseConvRate: $supplyBaseConvRate
       receiveAssetId: $receiveAssetId
       receiveValue: $receiveValue
+      receiveBaseConvRate: $receiveBaseConvRate
       transactedAt: $transactedAt
     ) {
       ok
@@ -164,6 +196,47 @@ export const GET_TASK_BY_ID_OR_LATEST = gql`
       createdAt
       startedAt
       endedAt
+      metaData
     }
+  }
+`;
+
+export const GET_TASKS_PAGINATED = gql`
+  query getTasks($limit: Int, $offset: Int) {
+    tasks(limit: $limit, offset: $offset) {
+      id
+      taskName
+      status
+      percentage
+      createdAt
+      startedAt
+      endedAt
+      metaData
+    }
+    tasksCount
+  }
+`;
+
+export const GET_HOLDINGS_PAGINATED = gql`
+  query getHoldings($limit: Int, $offset: Int) {
+    holdings(limit: $limit, offset: $offset) {
+      id
+      asset {
+        id
+        name
+        ticker
+        assetClass {
+          id
+        }
+        country {
+          id
+        }
+      }
+      value
+      date
+      averageBuy
+      valueInBase
+    }
+    holdingsCount
   }
 `;
