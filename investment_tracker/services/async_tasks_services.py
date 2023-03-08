@@ -18,9 +18,16 @@ class AsyncTasksService:
     def update_progress(self, async_task_id, percentage):
         AsyncTasksAccessor().update_async_task(async_task_id, percentage=percentage)
 
-    def set_completed(self, async_task_id):
+    def set_completed(self, async_task_id, warnings=None):
+        meta_data = None
+        if warnings:
+            meta_data = {"warnings": warnings}
         AsyncTasksAccessor().update_async_task(
-            async_task_id, status=AsyncTasksModel.Statuses.COMPLETED, percentage=100, ended_at=timezone.now()
+            async_task_id,
+            status=AsyncTasksModel.Statuses.COMPLETED,
+            percentage=100,
+            ended_at=timezone.now(),
+            meta_data=meta_data,
         )
 
     def set_failed(self, async_task_id):

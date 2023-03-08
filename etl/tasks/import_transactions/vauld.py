@@ -1,3 +1,4 @@
+import pydash
 import pandas as pd
 from datetime import datetime
 from io import StringIO
@@ -7,7 +8,8 @@ from etl.tasks.import_transactions.mixins.load_mixin import LoadMixin
 from etl.utils.common_utils import decode_base64_data
 from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor
 from investment_tracker.models import AssetsModel, TransactionsModel
-from investment_tracker.utils.transactions_utils import to_lower_denomination
+from investment_tracker.services.conversion_rates_services import ConversionRatesService
+from investment_tracker.utils.transactions_utils import get_base_asset, to_lower_denomination
 
 VAULD_TABLE_COLS = {
     "S_NO": "S.No",
@@ -55,6 +57,7 @@ class ImportTransactionsFromVauldETL(LoadMixin, ETL):
         existing_assets = AssetsAccessor().get_assets(tickers=list(tickers) + ["INR"])
         assets_map = {asset.ticker: asset for asset in existing_assets}
         missing_assets = tickers.difference(assets_map.keys())
+        base_asset = get_base_asset()
         new_assets = []
         for ticker in missing_assets:
             asset = AssetsModel(name=ticker, ticker=ticker, asset_class_id=asset_classes_map["Crypto"])
@@ -89,7 +92,38 @@ class ImportTransactionsFromVauldETL(LoadMixin, ETL):
             ),
             axis=1,
         )
+        conversion_rates = []
+        failed_conversions = []
+        transactions_df["supply_base_conv_rate"] = transactions_df.apply(
+            lambda row: ConversionRatesService().get_conversion_rate(
+                row["supply_asset"],
+                base_asset,
+                row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            ),
+            axis=1,
+        )
+        transactions_df["receive_base_conv_rate"] = transactions_df.apply(
+            lambda row: ConversionRatesService().get_conversion_rate(
+                row["receive_asset"],
+                base_asset,
+                row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            ),
+            axis=1,
+        )
+        failed_conversions = [f"{from_asset.ticker}/{to_asset.ticker}" for from_asset, to_asset in failed_conversions]
+        failed_conversions = pydash.uniq(failed_conversions)
         transactions_df = transactions_df.drop(columns=list(VAULD_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
-        return {"transactions": transactions, "assets": new_assets}
+        return {
+            "transactions": transactions,
+            "assets": new_assets,
+            "conversion_rates": conversion_rates,
+            "failed_conversions": failed_conversions,
+        }

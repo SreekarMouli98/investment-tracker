@@ -5,8 +5,10 @@ from investment_tracker.models.assets_models import AssetClassesModel, AssetsMod
 
 
 class AssetClassesAccessor:
-    def get_asset_classes(self):
+    def get_asset_classes(self, as_dicts=False):
         qs = AssetClassesModel.objects.all()
+        if as_dicts:
+            qs = qs.values()
         return list(qs)
 
     def get_asset_class_by_id(self, asset_class_id):
