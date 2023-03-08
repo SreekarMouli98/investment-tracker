@@ -1,6 +1,8 @@
-from django.utils import timezone
 import decimal
+import os
+
 import requests
+from django.utils import timezone
 
 from investment_tracker.accessors.conversion_rates_accessors import ConversionRatesAccessor
 from investment_tracker.models.conversion_rates_models import ConversionRatesModel
@@ -47,13 +49,15 @@ class ConversionRatesService:
                 rate = crypto_to_base * base_to_final
             else:
                 params = {
-                    "access_key": "xxxx",
+                    "access_key": os.environ.get("CRYPTO_CONVERSION_API_KEY"),
                     "target": final_asset.ticker,
                     "symbols": crypto_asset.ticker,
                 }
                 res = requests.get(url=url, params=params)
                 data = res.json()
                 try:
+                    if not data["success"]:
+                        raise Exception()
                     rate = to_lower_denomination(data["rates"][crypto_asset.ticker], asset=final_asset)
                 except Exception:
                     failed_conversions.append((crypto_asset, final_asset))
@@ -70,13 +74,15 @@ class ConversionRatesService:
         else:
             url = f"https://api.getgeoapi.com/v2/currency/historical/{date.strftime('%Y-%m-%d')}"
             params = {
-                "api_key": "xxxx",
+                "api_key": os.environ.get("CURRENCY_CONVERSION_API_KEY"),
                 "from": from_asset.ticker,
                 "to": to_asset.ticker,
             }
             res = requests.get(url=url, params=params)
             data = res.json()
             try:
+                if data["status"] == "failed":
+                    raise Exception()
                 rate = to_lower_denomination(data["rates"][to_asset.ticker]["rate"], asset=to_asset)
             except Exception:
                 failed_conversions.append((from_asset, to_asset))

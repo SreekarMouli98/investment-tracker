@@ -1,3 +1,4 @@
+import pydash
 import pandas as pd
 from datetime import datetime
 from django.utils.timezone import make_aware
@@ -119,9 +120,16 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
             lambda row: make_aware(datetime.strptime(row[ZERODHA_TABLE_COLS["DATE"]], "%d-%m-%Y")),
             axis=1,
         )
+        conversion_rates = []
+        failed_conversions = []
         transactions_df["supply_base_conv_rate"] = transactions_df.apply(
             lambda row: ConversionRatesService().get_conversion_rate(
-                assets_map["INR"], base_asset, date=row["transacted_at"]
+                assets_map["INR"],
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
             )
             if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
             else (
@@ -133,7 +141,14 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
                     ].asset_class,
                 )
             )
-            * ConversionRatesService().get_conversion_rate(assets_map["INR"], base_asset, date=row["transacted_at"]),
+            * ConversionRatesService().get_conversion_rate(
+                assets_map["INR"],
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            ),
             axis=1,
         )
         transactions_df["receive_base_conv_rate"] = transactions_df.apply(
@@ -146,12 +161,33 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
                     ].asset_class,
                 )
             )
-            * ConversionRatesService().get_conversion_rate(assets_map["INR"], base_asset, date=row["transacted_at"])
+            * ConversionRatesService().get_conversion_rate(
+                assets_map["INR"],
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            )
             if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
-            else ConversionRatesService().get_conversion_rate(assets_map["INR"], base_asset, date=row["transacted_at"]),
+            else ConversionRatesService().get_conversion_rate(
+                assets_map["INR"],
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
+            ),
             axis=1,
         )
+        failed_conversions = [f"{from_asset.ticker}/{to_asset.ticker}" for from_asset, to_asset in failed_conversions]
+        failed_conversions = pydash.uniq(failed_conversions)
         transactions_df = transactions_df.drop(columns=list(ZERODHA_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
-        return {"transactions": transactions, "assets": new_assets}
+        return {
+            "transactions": transactions,
+            "assets": new_assets,
+            "conversion_rates": conversion_rates,
+            "failed_conversions": failed_conversions,
+        }

@@ -1,3 +1,4 @@
+import pydash
 import pandas as pd
 from datetime import datetime
 from django.utils.timezone import make_aware
@@ -124,9 +125,16 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
             lambda row: make_aware(datetime.strptime(row[INDMONEY_TABLE_COLS["TRADE_DATE"]], "%Y-%m-%d")),
             axis=1,
         )
+        conversion_rates = []
+        failed_conversions = []
         transactions_df["supply_base_conv_rate"] = transactions_df.apply(
             lambda row: ConversionRatesService().get_conversion_rate(
-                get_currency_used(row), base_asset, date=row["transacted_at"]
+                get_currency_used(row),
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
             )
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
             else (
@@ -140,7 +148,12 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
                 )
             )
             * ConversionRatesService().get_conversion_rate(
-                get_currency_used(row), base_asset, date=row["transacted_at"]
+                get_currency_used(row),
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
             ),
             axis=1,
         )
@@ -156,15 +169,32 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
                 )
             )
             * ConversionRatesService().get_conversion_rate(
-                get_currency_used(row), base_asset, date=row["transacted_at"]
+                get_currency_used(row),
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
             )
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
             else ConversionRatesService().get_conversion_rate(
-                get_currency_used(row), base_asset, date=row["transacted_at"]
+                get_currency_used(row),
+                base_asset,
+                date=row["transacted_at"],
+                skip_persist=True,
+                new_conversion_rates=conversion_rates,
+                failed_conversions=failed_conversions,
             ),
             axis=1,
         )
+        failed_conversions = [f"{from_asset.ticker}/{to_asset.ticker}" for from_asset, to_asset in failed_conversions]
+        failed_conversions = pydash.uniq(failed_conversions)
         transactions_df = transactions_df.drop(columns=list(INDMONEY_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
-        return {"transactions": transactions, "assets": new_assets}
+        return {
+            "transactions": transactions,
+            "assets": new_assets,
+            "conversion_rates": conversion_rates,
+            "failed_conversions": failed_conversions,
+        }

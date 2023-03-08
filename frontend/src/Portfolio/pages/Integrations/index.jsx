@@ -249,7 +249,7 @@ function PastTasks() {
         visible={drawerVisible}
         placement="right"
         onClose={toggleTable}
-        width="1600px"
+        width="90%"
       >
         <TasksTable doRefetch={drawerVisible} />
       </Drawer>
