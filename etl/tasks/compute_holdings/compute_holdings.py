@@ -1,4 +1,5 @@
 import decimal
+import logging
 from collections import defaultdict
 from django.db import transaction
 
@@ -7,15 +8,19 @@ from investment_tracker.accessors import HoldingsAccessor, TransactionsAccessor
 from investment_tracker.models.holdings_models import HoldingsModel
 from investment_tracker.utils.transactions_utils import calculate_average_buy, get_base_asset, to_higher_denomination
 
+logger = logging.getLogger(__name__)
+
 
 class ComputeHoldingsETL(ETL):
     def extract(self, start_date):
+        logger.info("[Compute Holdings ETL]: Extract -> Begin")
         base_asset = get_base_asset()
         depricate_holdings = HoldingsAccessor().get_holdings(after_date=start_date, id_only=True)
         previous_holdings = HoldingsAccessor().get_latest_holding_before_date(start_date)
         transactions_from_start_date = TransactionsAccessor().get_transactions(
             after_date=start_date, order_by=["transacted_at"]
         )
+        logger.info("[Compute Holdings ETL]: Extract -> End")
         return {
             "base_asset": base_asset,
             "depricate_holdings": depricate_holdings,
@@ -24,6 +29,7 @@ class ComputeHoldingsETL(ETL):
         }
 
     def transform(self, data):
+        logger.info("[Compute Holdings ETL]: Transform -> Begin")
         base_asset = data["base_asset"]
         depricate_holdings = data["depricate_holdings"]
         previous_holdings = data["previous_holdings"]
@@ -66,6 +72,7 @@ class ComputeHoldingsETL(ETL):
                             ),
                         )
                     )
+        logger.info("[Compute Holdings ETL]: Transform -> End")
         return {
             "depricate_holdings": depricate_holdings,
             "new_holdings": new_holdings,
@@ -73,7 +80,11 @@ class ComputeHoldingsETL(ETL):
 
     @transaction.atomic
     def load(self, data):
+        logger.info("[Compute Holdings ETL]: Load -> Start")
         depricate_holdings = data["depricate_holdings"]
         new_holdings = data["new_holdings"]
+        logger.info(f"[Compute Holdings ETL]: Load -> Deleting {len(depricate_holdings)} holdings")
         HoldingsAccessor().delete_holdings_by_ids(depricate_holdings)
+        logger.info(f"[Compute Holdings ETL]: Load -> Inserting {len(new_holdings)} new holdings")
         HoldingsModel.objects.bulk_create(new_holdings)
+        logger.info("[Compute Holdings ETL]: Load -> End")

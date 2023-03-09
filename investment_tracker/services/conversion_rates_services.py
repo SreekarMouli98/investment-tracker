@@ -1,4 +1,5 @@
 import decimal
+import logging
 import os
 
 import requests
@@ -10,10 +11,14 @@ from investment_tracker.services.assets_services import AssetClassesService
 from investment_tracker.utils.transactions_utils import get_base_asset, to_lower_denomination
 
 
+logger = logging.getLogger(__name__)
+
+
 class ConversionRatesService:
     def get_conversion_rate(
         self, from_asset, to_asset, date=None, skip_persist=False, new_conversion_rates=None, failed_conversions=None
     ):
+        logger.info(f"Get conversion rate between {from_asset.ticker} and {to_asset.ticker}")
         date = timezone.now() if date is None else date
         new_conversion_rates = [] if new_conversion_rates is None else new_conversion_rates
         failed_conversions = [] if failed_conversions is None else failed_conversions
@@ -92,4 +97,21 @@ class ConversionRatesService:
                 new_conversion_rates.append(conv_rate)
             else:
                 ConversionRatesAccessor().persist(conv_rate)
+        logger.info(f"Get conversion rate between {from_asset.ticker} and {to_asset.ticker} = {rate}")
         return rate
+
+    def get_conversion_rate_cached(self, from_asset, to_asset, *args, cached_conversion_rates=None, **kwargs):
+        logger.info(f"Get conversion rate cached between {from_asset.ticker} and {to_asset.ticker}")
+        cached_conversion_rates = {} if cached_conversion_rates is None else cached_conversion_rates
+        assets = (from_asset.ticker, to_asset.ticker)
+        reversed_assets = tuple(reversed(assets))
+        conv_rate = None
+        if assets in cached_conversion_rates:
+            conv_rate = cached_conversion_rates[assets]
+        elif reversed_assets in cached_conversion_rates:
+            conv_rate = cached_conversion_rates[reversed_assets]
+            conv_rate = 1 / conv_rate
+        else:
+            conv_rate = self.get_conversion_rate(from_asset, to_asset, *args, **kwargs)
+            cached_conversion_rates[assets] = conv_rate
+        return conv_rate

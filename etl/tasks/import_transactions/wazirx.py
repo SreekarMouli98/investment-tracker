@@ -1,5 +1,6 @@
 import pandas as pd
 import pydash
+import logging
 from datetime import datetime
 from django.utils.timezone import make_aware
 from io import BytesIO
@@ -13,6 +14,7 @@ from investment_tracker.models import AssetsModel, TransactionsModel
 from investment_tracker.services.conversion_rates_services import ConversionRatesService
 from investment_tracker.utils.transactions_utils import get_base_asset, to_lower_denomination
 
+logger = logging.getLogger(__name__)
 
 EXCHANGE_TRADES_TABLE_COLS = {
     "DATE": "Date",
@@ -42,6 +44,7 @@ P2P_TRADES_TABLE_COLS = {
 class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
     def extract(self, source_data: str) -> list[dict]:
         """Extracts data from Wazirx Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: Wazirx -> Extract -> Begin")
         data = BytesIO(decode_base64_data(source_data))
         wb = load_workbook(filename=data, read_only=True)
         exchange_trades_sheet = wb["Exchange Trades"]
@@ -72,10 +75,12 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
             "exchange_trades": exchange_trades_df.to_dict("records"),
             "p2p_trades": p2p_trades_df.to_dict("records"),
         }
+        logger.info("[Import Transactions ETL]: Wazirx -> Extract -> End")
         return data
 
     def transform(self, extracted_data: list[dict]) -> dict:
         """Transforms extracted data from Wazirx Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: Wazirx -> Transform -> Begin")
         asset_classes = AssetClassesAccessor().get_asset_classes()
         asset_classes_map = {asset_class.name: asset_class.id for asset_class in asset_classes}
         exchange_trades_df = pd.DataFrame(
@@ -119,13 +124,15 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
         )
         conversion_rates = []
         failed_conversions = []
+        cached_conversion_rates = {}
         transactions_df["supply_base_conv_rate"] = transactions_df.apply(
             lambda row: to_lower_denomination(row[EXCHANGE_TRADES_TABLE_COLS["PRICE"]], asset=base_asset)
             if row["receive_asset"] == base_asset
-            else ConversionRatesService().get_conversion_rate(
+            else ConversionRatesService().get_conversion_rate_cached(
                 row["supply_asset"],
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -135,10 +142,11 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
         transactions_df["receive_base_conv_rate"] = transactions_df.apply(
             lambda row: to_lower_denomination(1, asset=base_asset)
             if row["receive_asset"] == base_asset
-            else ConversionRatesService().get_conversion_rate(
+            else ConversionRatesService().get_conversion_rate_cached(
                 row["receive_asset"],
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -150,6 +158,7 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
         transactions_df = transactions_df.drop(columns=list(EXCHANGE_TRADES_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
+        logger.info("[Import Transactions ETL]: Wazirx -> Transform -> End")
         return {
             "transactions": transactions,
             "assets": new_assets,

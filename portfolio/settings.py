@@ -172,3 +172,35 @@ GRAPHENE = {
 CELERY_BROKER_URL = os.environ.get("CACHE_LOCATION")
 CELERY_RESULT_BACKEND = os.environ.get("CACHE_LOCATION")
 CELERY_IMPORTS = ("etl.tasks",)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "level": "INFO",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "format": "[%(levelname)s] [%(asctime)s]: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": os.environ.get("LOGGING_LEVEL"),
+        },
+        "investment_tracker": {
+            "handlers": ["console"],
+            "level": os.environ.get("LOGGING_LEVEL"),
+        },
+        "etl": {
+            "handlers": ["console"],
+            "level": os.environ.get("LOGGING_LEVEL"),
+        },
+    },
+}

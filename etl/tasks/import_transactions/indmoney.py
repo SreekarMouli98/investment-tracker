@@ -1,5 +1,6 @@
 import pydash
 import pandas as pd
+import logging
 from datetime import datetime
 from django.utils.timezone import make_aware
 from io import BytesIO
@@ -12,6 +13,8 @@ from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor, C
 from investment_tracker.models import AssetsModel, TransactionsModel
 from investment_tracker.services.conversion_rates_services import ConversionRatesService
 from investment_tracker.utils.transactions_utils import get_base_asset, to_higher_denomination, to_lower_denomination
+
+logger = logging.getLogger(__name__)
 
 INDMONEY_TABLE_COLS = {
     "SOURCE_HOLDING_ID": "Source holding ID",
@@ -32,6 +35,7 @@ INDMONEY_TABLE_COLS = {
 class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
     def extract(self, source_data: str) -> list[dict]:
         """Extracts data from INDMoney Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: INDMoney -> Extract -> Begin")
         data = BytesIO(decode_base64_data(source_data))
         wb = load_workbook(filename=data, read_only=True)
         data = []
@@ -51,10 +55,12 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
                     found_cols = True
             sheet_transactions_df = pd.DataFrame(sheet_transactions, columns=list(INDMONEY_TABLE_COLS.values()))
             data.extend(sheet_transactions_df.to_dict("records"))
+        logger.info("[Import Transactions ETL]: INDMoney -> Extract -> End")
         return data
 
     def transform(self, extracted_data: list[dict]) -> dict:
         """Transforms extracted data from INDMoney Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: INDMoney -> Transform -> Begin")
         asset_classes = AssetClassesAccessor().get_asset_classes()
         asset_classes_map = {asset_class.name: asset_class.id for asset_class in asset_classes}
         countries = CountriesAccessor().get_countries()
@@ -127,11 +133,13 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
         )
         conversion_rates = []
         failed_conversions = []
+        cached_conversion_rates = {}
         transactions_df["supply_base_conv_rate"] = transactions_df.apply(
-            lambda row: ConversionRatesService().get_conversion_rate(
+            lambda row: ConversionRatesService().get_conversion_rate_cached(
                 get_currency_used(row),
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -147,10 +155,11 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
                     asset_class_instance=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]].asset_class,
                 )
             )
-            * ConversionRatesService().get_conversion_rate(
+            * ConversionRatesService().get_conversion_rate_cached(
                 get_currency_used(row),
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -168,19 +177,21 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
                     asset_class_instance=assets_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]].asset_class,
                 )
             )
-            * ConversionRatesService().get_conversion_rate(
+            * ConversionRatesService().get_conversion_rate_cached(
                 get_currency_used(row),
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
             )
             if row[INDMONEY_TABLE_COLS["BUY_UNITS"]] != "0"
-            else ConversionRatesService().get_conversion_rate(
+            else ConversionRatesService().get_conversion_rate_cached(
                 get_currency_used(row),
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -192,6 +203,7 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
         transactions_df = transactions_df.drop(columns=list(INDMONEY_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
+        logger.info("[Import Transactions ETL]: INDMoney -> Transform -> End")
         return {
             "transactions": transactions,
             "assets": new_assets,

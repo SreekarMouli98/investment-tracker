@@ -1,3 +1,4 @@
+import logging
 import traceback
 from celery import shared_task
 
@@ -8,8 +9,12 @@ from etl.tasks.import_transactions.zerodha import *
 from investment_tracker.services import AsyncTasksService
 
 
+logger = logging.getLogger(__name__)
+
+
 @shared_task
 def run(async_task_id: int, source: str, source_data: str) -> None:
+    logger.info("[Import Transactions ETL]: Begin")
     try:
         etl_service = None
         if source == "INDMoney":
@@ -30,5 +35,7 @@ def run(async_task_id: int, source: str, source_data: str) -> None:
         (warnings,) = etl_service.load(transformed_data)
         AsyncTasksService().set_completed(async_task_id, warnings=warnings)
     except Exception as ex:
+        logger.info("[Import Transactions ETL]: Exception -> " + str(ex))
         traceback.print_exc()
         AsyncTasksService().set_failed(async_task_id)
+    logger.info("[Import Transactions ETL]: END")

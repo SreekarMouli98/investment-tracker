@@ -1,3 +1,4 @@
+import logging
 import pydash
 import pandas as pd
 from datetime import datetime
@@ -16,6 +17,8 @@ from investment_tracker.utils.transactions_utils import (
     to_higher_denomination,
     to_lower_denomination,
 )
+
+logger = logging.getLogger(__name__)
 
 ZERODHA_TABLE_COLS = {
     "ORDER_NO": "Order No.",
@@ -39,6 +42,7 @@ ZERODHA_TABLE_COLS = {
 class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
     def extract(self, source_data: str) -> list[dict]:
         """Extracts data from Zerodha Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: Zerodha -> Extract -> Begin")
         data = BytesIO(decode_base64_data(source_data))
         wb = load_workbook(filename=data, read_only=True)
         data = []
@@ -59,10 +63,12 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
             sheet_transactions_df = pd.DataFrame(sheet_transactions, columns=list(ZERODHA_TABLE_COLS.values())[:-1])
             sheet_transactions_df[ZERODHA_TABLE_COLS["DATE"]] = sheetname
             data.extend(sheet_transactions_df.to_dict("records"))
+        logger.info("[Import Transactions ETL]: Zerodha -> Extract -> End")
         return data
 
     def transform(self, extracted_data: list[dict]) -> dict:
         """Transforms extracted data from Zerodha Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: Zerodha -> Transform -> Begin")
         asset_classes = AssetClassesAccessor().get_asset_classes()
         asset_classes_map = {asset_class.name: asset_class.id for asset_class in asset_classes}
         countries = CountriesAccessor().get_countries()
@@ -122,11 +128,13 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
         )
         conversion_rates = []
         failed_conversions = []
+        cached_conversion_rates = {}
         transactions_df["supply_base_conv_rate"] = transactions_df.apply(
-            lambda row: ConversionRatesService().get_conversion_rate(
+            lambda row: ConversionRatesService().get_conversion_rate_cached(
                 assets_map["INR"],
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -141,10 +149,11 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
                     ].asset_class,
                 )
             )
-            * ConversionRatesService().get_conversion_rate(
+            * ConversionRatesService().get_conversion_rate_cached(
                 assets_map["INR"],
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -161,19 +170,21 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
                     ].asset_class,
                 )
             )
-            * ConversionRatesService().get_conversion_rate(
+            * ConversionRatesService().get_conversion_rate_cached(
                 assets_map["INR"],
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
             )
             if row[ZERODHA_TABLE_COLS["BUY_B_SELL_S"]] in ("buy", "B")
-            else ConversionRatesService().get_conversion_rate(
+            else ConversionRatesService().get_conversion_rate_cached(
                 assets_map["INR"],
                 base_asset,
                 date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -185,6 +196,7 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
         transactions_df = transactions_df.drop(columns=list(ZERODHA_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
         transactions = [TransactionsModel(**transaction) for transaction in transactions]
+        logger.info("[Import Transactions ETL]: Zerodha -> Transform -> End")
         return {
             "transactions": transactions,
             "assets": new_assets,
