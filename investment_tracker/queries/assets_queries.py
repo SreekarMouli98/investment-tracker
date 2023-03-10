@@ -1,7 +1,9 @@
 import graphene
 
-from investment_tracker.schema.assets_schema import AssetClassesType, AssetsType
-from investment_tracker.accessors.assets_accessors import AssetClassesAccessor, AssetsAccessor
+from investment_tracker.accessors.assets_accessors import AssetClassesAccessor
+from investment_tracker.accessors.assets_accessors import AssetsAccessor
+from investment_tracker.schema.assets_schema import AssetClassesType
+from investment_tracker.schema.assets_schema import AssetsType
 from investment_tracker.utils.transactions_utils import get_base_asset
 
 
@@ -25,7 +27,15 @@ class AssetsQuery(graphene.ObjectType):
     def resolve_asset_classes(self, info):
         return AssetClassesAccessor().get_asset_classes()
 
-    def resolve_assets(self, info, limit=None, offset=None, asset_classes=None, countries=None, search_text=None):
+    def resolve_assets(
+        self,
+        info,
+        limit=None,
+        offset=None,
+        asset_classes=None,
+        countries=None,
+        search_text=None,
+    ):
         return AssetsAccessor().get_assets(
             limit=limit,
             offset=offset,
@@ -35,7 +45,9 @@ class AssetsQuery(graphene.ObjectType):
             order_by=["name"],
         )
 
-    def resolve_assets_count(self, info, asset_classes=None, countries=None, search_text=None):
+    def resolve_assets_count(
+        self, info, asset_classes=None, countries=None, search_text=None
+    ):
         return AssetsAccessor().count_assets(
             asset_classes=asset_classes,
             countries=countries,

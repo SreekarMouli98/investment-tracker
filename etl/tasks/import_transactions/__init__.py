@@ -1,5 +1,6 @@
 import logging
 import traceback
+
 from celery import shared_task
 
 from etl.tasks.import_transactions.indmoney import *

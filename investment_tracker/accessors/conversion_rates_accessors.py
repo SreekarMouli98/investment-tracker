@@ -12,7 +12,8 @@ class ConversionRatesAccessor:
         qs = ConversionRatesModel.objects.filter()
         if between:
             qs = qs.filter(
-                Q(from_asset=between[0], to_asset=between[1]) | Q(from_asset=between[1], to_asset=between[0])
+                Q(from_asset=between[0], to_asset=between[1])
+                | Q(from_asset=between[1], to_asset=between[0])
             )
         if date:
             qs = qs.filter(date=date)

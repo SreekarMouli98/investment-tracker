@@ -1,7 +1,8 @@
 import logging
 import traceback
-from celery import shared_task
 from datetime import datetime
+
+from celery import shared_task
 
 from etl.tasks.compute_holdings.compute_holdings import ComputeHoldingsETL
 from investment_tracker.services import AsyncTasksService
