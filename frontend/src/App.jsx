@@ -1,6 +1,6 @@
-import Portfolio from "./Portfolio";
+import Portfolio from './Portfolio';
 
-import "./styles.css";
+import './styles.css';
 
 function App() {
   return <Portfolio />;
