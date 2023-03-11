@@ -1,10 +1,10 @@
-import { LedgerTable } from "../../components";
+import { LedgerTable } from '../../components';
 
 function Ledger() {
   return (
     <div
       style={{
-        padding: "20px",
+        padding: '20px',
       }}
     >
       <LedgerTable />

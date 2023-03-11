@@ -1,10 +1,11 @@
-import { Button, Modal } from "antd";
-import { isEmpty } from "lodash";
-import { useState } from "react";
+import { useState } from 'react';
+import { Button, Modal } from 'antd';
+import { isEmpty } from 'lodash';
 
-import AssetTag from "../AssetTag";
-import AssetPickerCard from "../AssetPickerCard";
-import "./style.css";
+import AssetPickerCard from '../AssetPickerCard';
+import AssetTag from '../AssetTag';
+
+import './style.css';
 
 function AssetPicker({ value, onChange }) {
   const asset = value;
@@ -13,17 +14,21 @@ function AssetPicker({ value, onChange }) {
   const toggleModal = () => setModalVisibility(!modalVisible);
   return (
     <>
-      <span onClick={toggleModal} className="asset-picker-tag">
-        {isEmpty(asset) ? (
-          <Button>Choose Asset</Button>
-        ) : (
+      {isEmpty(asset) ? (
+        <Button onClick={toggleModal}>Choose Asset</Button>
+      ) : (
+        <button
+          onClick={toggleModal}
+          type="button"
+          className="asset-picker-tag-btn"
+        >
           <AssetTag
             ticker={asset?.ticker}
             name={asset?.name}
             assetClassId={asset?.assetClass?.id}
           />
-        )}
-      </span>
+        </button>
+      )}
       <Modal
         visible={modalVisible}
         title="Pick Asset"
@@ -31,7 +36,7 @@ function AssetPicker({ value, onChange }) {
         centered
         width="auto"
         bodyStyle={{
-          padding: "0px",
+          padding: '0px',
         }}
         onCancel={toggleModal}
       >

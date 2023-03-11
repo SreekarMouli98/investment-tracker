@@ -1,11 +1,11 @@
+import { useEffect, useState } from 'react';
 import {
   LeftOutlined,
   RightOutlined,
   VerticalLeftOutlined,
   VerticalRightOutlined,
-} from "@ant-design/icons";
-import { Button, Col, Input, Row, Space, Tooltip } from "antd";
-import { useEffect, useState } from "react";
+} from '@ant-design/icons';
+import { Button, Col, Input, Row, Space, Tooltip } from 'antd';
 
 function TablePagination({
   rowStart,
@@ -18,15 +18,15 @@ function TablePagination({
   onNext,
   onFirst,
   onLast,
-  width = "1015px",
+  width = '1015px',
 }) {
   const [newPageNo, setNewPageNo] = useState(pageNo);
 
   const onPageChange = (event) => {
-    let _pageNo = event.target.value;
-    if (_pageNo < 0) _pageNo = 0;
-    if (_pageNo > totalPages) _pageNo = totalPages;
-    setNewPageNo(_pageNo);
+    let pgNo = event.target.value;
+    if (pgNo < 0) pgNo = 0;
+    if (pgNo > totalPages) pgNo = totalPages;
+    setNewPageNo(pgNo);
   };
 
   useEffect(() => {
@@ -37,16 +37,16 @@ function TablePagination({
     <div
       style={{
         width,
-        height: "50px",
-        border: "1px solid grey",
-        fontWeight: "bold",
-        backgroundColor: "#222628",
+        height: '50px',
+        border: '1px solid grey',
+        fontWeight: 'bold',
+        backgroundColor: '#222628',
       }}
     >
-      <Row style={{ height: "100%" }} justify="end" align="middle">
+      <Row style={{ height: '100%' }} justify="end" align="middle">
         <Col>
           <Space>
-            <span style={{ marginRight: "30px" }}>
+            <span style={{ marginRight: '30px' }}>
               {rowStart} to {rowEnd} of {totalRows}
             </span>
             <Tooltip title="Go to first page">
@@ -70,9 +70,9 @@ function TablePagination({
               Page
               <Input
                 style={{
-                  width: "50px",
-                  margin: "0px 5px",
-                  textAlign: "right",
+                  width: '50px',
+                  margin: '0px 5px',
+                  textAlign: 'right',
                 }}
                 value={newPageNo}
                 onChange={onPageChange}

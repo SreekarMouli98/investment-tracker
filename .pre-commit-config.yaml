@@ -17,5 +17,5 @@ repos:
     hooks:
       - id: frontend-lint-fix
         name: frontend-lint-fix
-        entry: bash -c 'cd frontend && npm run lint:fix'
-        language: python
+        entry: bash -c "cd frontend && npm run lint:fix"
+        language: node
