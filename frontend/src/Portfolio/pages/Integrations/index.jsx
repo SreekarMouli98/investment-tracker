@@ -1,12 +1,12 @@
-import moment from "moment";
+import { useEffect, useState } from 'react';
 import {
   CheckOutlined,
   ExclamationCircleOutlined,
   FieldTimeOutlined,
   LoadingOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
-import { useLazyQuery } from "@apollo/client";
+} from '@ant-design/icons';
+import { useLazyQuery, useQuery } from '@apollo/client';
 import {
   Alert,
   Button,
@@ -21,54 +21,54 @@ import {
   Select,
   Typography,
   Upload,
-} from "antd";
-import { includes } from "lodash";
-import { useEffect, useState } from "react";
+} from 'antd';
+import { includes } from 'lodash';
+import moment from 'moment';
 
-import { GET_TASK_BY_ID_OR_LATEST, IMPORT_TRANSACTIONS } from "../../services";
-import PageLoading from "../../components/PageLoading";
-import TasksTable from "../../components/TasksTable";
+import PageLoading from '../../components/PageLoading';
+import TasksTable from '../../components/TasksTable';
+import { GET_TASK_BY_ID_OR_LATEST, IMPORT_TRANSACTIONS } from '../../services';
 
 const POLL_INTERVAL = 2000;
-const DATE_FORMAT = "MMM Do YYYY, h:mm:ss a";
+const DATE_FORMAT = 'MMM Do YYYY, h:mm:ss a';
 
 function Task({ loading, task }) {
   const getTaskTitle = () => {
     switch (task?.taskName) {
-      case "IMPORT_TRANSACTIONS":
-        return "Importing Transactions...";
-      case "COMPUTE_HOLDINGS":
-        return "Computing Holdings...";
+      case 'IMPORT_TRANSACTIONS':
+        return 'Importing Transactions...';
+      case 'COMPUTE_HOLDINGS':
+        return 'Computing Holdings...';
       default:
-        return "Recent Task...";
+        return 'Recent Task...';
     }
   };
 
   const getCardIcon = () => {
     switch (task?.status) {
-      case "PENDING":
-      case "IN_PROGRESS":
+      case 'COMPLETED':
+        return <CheckOutlined />;
+      case 'FAILED':
+        return <ExclamationCircleOutlined />;
+      case 'PENDING':
+      case 'IN_PROGRESS':
       default:
         return <LoadingOutlined />;
-      case "COMPLETED":
-        return <CheckOutlined />;
-      case "FAILED":
-        return <ExclamationCircleOutlined />;
     }
   };
 
   const getProgressStatus = () => {
     switch (task?.status) {
-      case "PENDING":
-        return "active";
-      case "IN_PROGRESS":
-        return "normal";
-      case "COMPLETED":
-        return "success";
-      case "FAILED":
-        return "exception";
+      case 'PENDING':
+        return 'active';
+      case 'IN_PROGRESS':
+        return 'normal';
+      case 'COMPLETED':
+        return 'success';
+      case 'FAILED':
+        return 'exception';
       default:
-        return "active";
+        return 'active';
     }
   };
 
@@ -79,7 +79,7 @@ function Task({ loading, task }) {
   return (
     <Card
       title={title}
-      style={{ width: "650px", fontStyle: "italic" }}
+      style={{ width: '650px', fontStyle: 'italic' }}
       extra={getCardIcon()}
     >
       {loading ? (
@@ -97,18 +97,23 @@ function Task({ loading, task }) {
           <br />
           <Row>
             <Col span={12}>Started At</Col>
-            <Col span={12}>{task?.endedAt ? "Ended At" : ""}</Col>
+            <Col span={12}>{task?.endedAt ? 'Ended At' : ''}</Col>
             <Col span={12}>{moment(task?.createdAt).format(DATE_FORMAT)}</Col>
             <Col span={12}>
-              {task?.endedAt ? moment(task.endedAt).format(DATE_FORMAT) : ""}
+              {task?.endedAt ? moment(task.endedAt).format(DATE_FORMAT) : ''}
             </Col>
           </Row>
           <br />
           {task?.metaData?.warnings?.length > 0 && (
             <div>
-              {task.metaData.warnings.map((warning, i) => (
+              {task.metaData.warnings.map((warning) => (
                 <>
-                  <Alert key={i} message={warning} type="warning" showIcon />
+                  <Alert
+                    key={warning}
+                    message={warning}
+                    type="warning"
+                    showIcon
+                  />
                   <br />
                 </>
               ))}
@@ -125,14 +130,14 @@ function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
   const [source, setSource] = useState();
 
   const uploadFiles = (files) => {
-    let filesP = files.map((file) => {
+    const filesP = files.map((file) => {
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onload = () => {
           resolve(reader.result);
         };
-        reader.onerror = (error) => {
-          message.error("Failed to upload file! Please try again!");
+        reader.onerror = () => {
+          message.error('Failed to upload file! Please try again!');
           reject();
         };
         reader.readAsDataURL(file);
@@ -142,31 +147,31 @@ function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
   };
 
   const onFormSubmitted = async (values) => {
-    let files = [values?.file?.file];
-    if (values?.source === "Vauld") {
+    const files = [values?.file?.file];
+    if (values?.source === 'Vauld') {
       files.push(values?.secondFile?.file);
     }
-    let uploadedFiles = await uploadFiles(files);
-    let variables = {
+    const uploadedFiles = await uploadFiles(files);
+    const variables = {
       source: values?.source,
     };
-    if (values?.source === "Vauld") {
+    if (values?.source === 'Vauld') {
       variables.encodedFiles = {
         crypto_exchanges: uploadedFiles[0],
         fiat_exchanges: uploadedFiles[1],
       };
     } else {
-      variables.encodedFiles = uploadedFiles[0];
+      [variables.encodedFiles] = uploadedFiles;
     }
     importTransactions({
-      fetchPolicy: "no-cache",
+      fetchPolicy: 'no-cache',
       variables,
       onCompleted: (data) => {
         const taskId = data?.importTransactions;
-        getTaskByIdOrLatest({ variables: { taskId } });
+        getTaskByIdOrLatest({ taskId });
       },
       onError: () => {
-        message.error("Failed to import transactions! Please try again!");
+        message.error('Failed to import transactions! Please try again!');
       },
     });
   };
@@ -186,16 +191,16 @@ function ImportTransactions({ getTaskByIdOrLatest, loading, isTaskPending }) {
         <Form.Item label="Source" name="source" required>
           <Select
             options={[
-              { label: "Zerodha", value: "Zerodha" },
-              { label: "INDMoney", value: "INDMoney" },
-              { label: "Vauld", value: "Vauld" },
-              { label: "Wazirx", value: "Wazirx" },
+              { label: 'Zerodha', value: 'Zerodha' },
+              { label: 'INDMoney', value: 'INDMoney' },
+              { label: 'Vauld', value: 'Vauld' },
+              { label: 'Wazirx', value: 'Wazirx' },
             ]}
             value={source}
             onChange={(value) => setSource(value)}
           />
         </Form.Item>
-        {source !== "Vauld" ? (
+        {source !== 'Vauld' ? (
           <Form.Item label="File" name="file" required>
             <Upload beforeUpload={() => false} maxCount={1}>
               <Button icon={<UploadOutlined />}>Upload Report</Button>
@@ -258,14 +263,20 @@ function PastTasks() {
 }
 
 function Integrations() {
-  const [
-    getTaskByIdOrLatest,
-    { data, loading, error, startPolling, stopPolling },
-  ] = useLazyQuery(GET_TASK_BY_ID_OR_LATEST);
+  const {
+    data,
+    loading,
+    error,
+    startPolling,
+    stopPolling,
+    refetch: getTaskByIdOrLatest,
+  } = useQuery(GET_TASK_BY_ID_OR_LATEST, {
+    fetchPolicy: 'no-cache',
+  });
 
   const isTaskPending = includes(
-    ["PENDING", "IN_PROGRESS"],
-    data?.taskByIdOrLatest?.status
+    ['PENDING', 'IN_PROGRESS'],
+    data?.taskByIdOrLatest?.status,
   );
 
   if (isTaskPending) {
@@ -275,31 +286,23 @@ function Integrations() {
   }
 
   useEffect(() => {
-    getTaskByIdOrLatest({
-      fetchPolicy: "no-cache",
-    });
-  }, []);
-
-  useEffect(() => {
     if (!loading && error) {
-      message.error("Unable to load task! Please try again!");
+      message.error('Unable to load task! Please try again!');
     }
   }, [loading, error]);
 
   return (
     <div
       style={{
-        padding: "20px",
+        padding: '20px',
       }}
     >
       <Row>
         {data && data?.taskByIdOrLatest && (
-          <>
-            <Col span={24}>
-              <Task task={data && data?.taskByIdOrLatest} />
-              <Divider />
-            </Col>
-          </>
+          <Col span={24}>
+            <Task task={data && data?.taskByIdOrLatest} />
+            <Divider />
+          </Col>
         )}
       </Row>
       <Row>

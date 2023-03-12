@@ -1,8 +1,8 @@
-import { Col, Result, Row } from "antd";
+import { Col, Result, Row } from 'antd';
 
 function UnexpectedError() {
   return (
-    <Row align="middle" justify="space-around" style={{ height: "100%" }}>
+    <Row align="middle" justify="space-around" style={{ height: '100%' }}>
       <Col>
         <Result
           status="error"

@@ -1,9 +1,12 @@
 import graphene
 from graphql import GraphQLError
 
-from investment_tracker.schema.assets_schema import AssetClassesType, AssetsType
-from investment_tracker.models.assets_models import AssetClassesModel, AssetsModel
-from investment_tracker.accessors.assets_accessors import AssetClassesAccessor, AssetsAccessor
+from investment_tracker.accessors.assets_accessors import AssetClassesAccessor
+from investment_tracker.accessors.assets_accessors import AssetsAccessor
+from investment_tracker.models.assets_models import AssetClassesModel
+from investment_tracker.models.assets_models import AssetsModel
+from investment_tracker.schema.assets_schema import AssetClassesType
+from investment_tracker.schema.assets_schema import AssetsType
 
 
 class CreateAssetClassMutation(graphene.Mutation):
@@ -28,7 +31,9 @@ class UpdateAssetClassMutation(graphene.Mutation):
     ok = graphene.Boolean()
 
     def mutate(self, info, asset_class_id, name, decimal_places):
-        AssetClassesAccessor().update_asset_class(asset_class_id, name=name, decimal_places=decimal_places)
+        AssetClassesAccessor().update_asset_class(
+            asset_class_id, name=name, decimal_places=decimal_places
+        )
         return UpdateAssetClassMutation(ok=True)
 
 
@@ -58,7 +63,9 @@ class CreateAssetMutation(graphene.Mutation):
 
     def mutate(self, info, name, ticker, asset_class, country):
         country = None if country == -1 else country
-        asset = AssetsModel(name=name, ticker=ticker, asset_class_id=asset_class, country_id=country)
+        asset = AssetsModel(
+            name=name, ticker=ticker, asset_class_id=asset_class, country_id=country
+        )
         asset = AssetsAccessor().persist(asset)
         return CreateAssetMutation(asset=asset)
 
@@ -77,7 +84,11 @@ class UpdateAssetMutation(graphene.Mutation):
         if not name or not ticker:
             raise GraphQLError("Invalid name!")
         AssetsAccessor().update_asset(
-            asset_id, name=name, ticker=ticker, asset_class_id=asset_class, country_id=country
+            asset_id,
+            name=name,
+            ticker=ticker,
+            asset_class_id=asset_class,
+            country_id=country,
         )
         return UpdateAssetMutation(ok=True)
 

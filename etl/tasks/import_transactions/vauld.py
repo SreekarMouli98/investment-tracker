@@ -1,15 +1,22 @@
-import pydash
-import pandas as pd
+import logging
 from datetime import datetime
 from io import StringIO
+
+import pandas as pd
+import pydash
 
 from etl.tasks.base_etl import ETL
 from etl.tasks.import_transactions.mixins.load_mixin import LoadMixin
 from etl.utils.common_utils import decode_base64_data
-from investment_tracker.accessors import AssetsAccessor, AssetClassesAccessor
-from investment_tracker.models import AssetsModel, TransactionsModel
+from investment_tracker.accessors import AssetClassesAccessor
+from investment_tracker.accessors import AssetsAccessor
+from investment_tracker.models import AssetsModel
+from investment_tracker.models import TransactionsModel
 from investment_tracker.services.conversion_rates_services import ConversionRatesService
-from investment_tracker.utils.transactions_utils import get_base_asset, to_lower_denomination
+from investment_tracker.utils.transactions_utils import get_base_asset
+from investment_tracker.utils.transactions_utils import to_lower_denomination
+
+logger = logging.getLogger(__name__)
 
 VAULD_TABLE_COLS = {
     "S_NO": "S.No",
@@ -31,6 +38,7 @@ VAULD_TABLE_COLS = {
 class ImportTransactionsFromVauldETL(LoadMixin, ETL):
     def extract(self, source_data: dict) -> list[dict]:
         """Extracts data from Vauld Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: Vauld -> Extract -> Begin")
         data = {
             "crypto_exchanges": source_data.get("crypto_exchanges"),
             "fiat_exchanges": source_data.get("fiat_exchanges"),
@@ -40,12 +48,16 @@ class ImportTransactionsFromVauldETL(LoadMixin, ETL):
             file_data = file_data.decode("utf-8")
             file_data_df = pd.read_csv(StringIO(file_data))
             data[key] = file_data_df.to_dict("records")
+        logger.info("[Import Transactions ETL]: Vauld -> Extract -> End")
         return data
 
     def transform(self, extracted_data: list[dict]) -> dict:
         """Transforms extracted data from Vauld Tradebook xlsx"""
+        logger.info("[Import Transactions ETL]: Vauld -> Transform -> Begin")
         asset_classes = AssetClassesAccessor().get_asset_classes()
-        asset_classes_map = {asset_class.name: asset_class.id for asset_class in asset_classes}
+        asset_classes_map = {
+            asset_class.name: asset_class.id for asset_class in asset_classes
+        }
         data = []
         for value in extracted_data.values():
             data.extend(value)
@@ -60,7 +72,9 @@ class ImportTransactionsFromVauldETL(LoadMixin, ETL):
         base_asset = get_base_asset()
         new_assets = []
         for ticker in missing_assets:
-            asset = AssetsModel(name=ticker, ticker=ticker, asset_class_id=asset_classes_map["Crypto"])
+            asset = AssetsModel(
+                name=ticker, ticker=ticker, asset_class_id=asset_classes_map["Crypto"]
+            )
             assets_map[ticker] = asset
             new_assets.append(asset)
         transactions_df["supply_asset"] = transactions_df.apply(
@@ -87,18 +101,22 @@ class ImportTransactionsFromVauldETL(LoadMixin, ETL):
         )
         transactions_df["transacted_at"] = transactions_df.apply(
             lambda row: datetime.strptime(
-                row[VAULD_TABLE_COLS["DATE_TIME"]].replace("(India Standard Time)", "").rstrip(),
+                row[VAULD_TABLE_COLS["DATE_TIME"]]
+                .replace("(India Standard Time)", "")
+                .rstrip(),
                 "%a %b %d %Y %H:%M:%S %Z%z",
             ),
             axis=1,
         )
         conversion_rates = []
         failed_conversions = []
+        cached_conversion_rates = {}
         transactions_df["supply_base_conv_rate"] = transactions_df.apply(
-            lambda row: ConversionRatesService().get_conversion_rate(
+            lambda row: ConversionRatesService().get_conversion_rate_cached(
                 row["supply_asset"],
                 base_asset,
-                row["transacted_at"],
+                date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
@@ -106,21 +124,28 @@ class ImportTransactionsFromVauldETL(LoadMixin, ETL):
             axis=1,
         )
         transactions_df["receive_base_conv_rate"] = transactions_df.apply(
-            lambda row: ConversionRatesService().get_conversion_rate(
+            lambda row: ConversionRatesService().get_conversion_rate_cached(
                 row["receive_asset"],
                 base_asset,
-                row["transacted_at"],
+                date=row["transacted_at"],
+                cached_conversion_rates=cached_conversion_rates,
                 skip_persist=True,
                 new_conversion_rates=conversion_rates,
                 failed_conversions=failed_conversions,
             ),
             axis=1,
         )
-        failed_conversions = [f"{from_asset.ticker}/{to_asset.ticker}" for from_asset, to_asset in failed_conversions]
+        failed_conversions = [
+            f"{from_asset.ticker}/{to_asset.ticker}"
+            for from_asset, to_asset in failed_conversions
+        ]
         failed_conversions = pydash.uniq(failed_conversions)
         transactions_df = transactions_df.drop(columns=list(VAULD_TABLE_COLS.values()))
         transactions = transactions_df.to_dict("records")
-        transactions = [TransactionsModel(**transaction) for transaction in transactions]
+        transactions = [
+            TransactionsModel(**transaction) for transaction in transactions
+        ]
+        logger.info("[Import Transactions ETL]: Vauld -> Transform -> End")
         return {
             "transactions": transactions,
             "assets": new_assets,

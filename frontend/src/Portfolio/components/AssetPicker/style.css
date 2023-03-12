@@ -1,3 +1,9 @@
-.asset-picker-tag:hover {
-  cursor: pointer;
+.asset-picker-tag-btn {
+  padding: 0px;
+  background: transparent;
+  border: 0px;
+}
+
+.asset-picker-tag-btn:hover {
+  cursor: pointer !important;
 }

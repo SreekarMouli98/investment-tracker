@@ -1,10 +1,10 @@
-import { HoldingsTable } from "../../components";
+import { HoldingsTable } from '../../components';
 
 function Holdings() {
   return (
     <div
       style={{
-        padding: "20px",
+        padding: '20px',
       }}
     >
       <HoldingsTable />

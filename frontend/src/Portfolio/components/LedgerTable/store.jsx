@@ -1,8 +1,9 @@
-import { createContext, useContext } from "react";
-import { action, computed, makeObservable, observable, toJS } from "mobx";
+import { createContext, useContext } from 'react';
+import { action, computed, makeObservable, observable, toJS } from 'mobx';
 
 class LedgerTableStore {
   transactions = [];
+
   modifiedTransactions = {};
 
   constructor() {
@@ -22,10 +23,10 @@ class LedgerTableStore {
   };
 
   get transactionsIdMap() {
-    let obj = {};
-    for (let transaction of this.transactions) {
+    const obj = {};
+    this.transactions.forEach((transaction) => {
       obj[transaction.id] = transaction;
-    }
+    });
     return obj;
   }
 
@@ -38,14 +39,13 @@ class LedgerTableStore {
           ...this.modifiedTransactions[transaction.id],
           isModified: true,
         };
-      } else {
-        return transaction;
       }
+      return transaction;
     });
   }
 
   modifyTransaction = (transactionId, updates) => {
-    let originalTransaction = toJS(this.getTransactionById(transactionId));
+    const originalTransaction = toJS(this.getTransactionById(transactionId));
     let modifiedTransaction = this.modifiedTransactions[transactionId];
     if (!modifiedTransaction) {
       modifiedTransaction = originalTransaction;
@@ -75,10 +75,10 @@ const LedgerTableContext = createContext(defaultValue);
 
 export const useLedgerTableStore = () => useContext(LedgerTableContext);
 
-export const LedgerTableStoreProvider = ({ children }) => {
+export function LedgerTableStoreProvider({ children }) {
   return (
     <LedgerTableContext.Provider value={defaultValue}>
       {children}
     </LedgerTableContext.Provider>
   );
-};
+}
