@@ -1,7 +1,8 @@
 import pydash
 from django.db.models import Q
 
-from investment_tracker.models.assets_models import AssetClassesModel, AssetsModel
+from investment_tracker.models.assets_models import AssetClassesModel
+from investment_tracker.models.assets_models import AssetsModel
 
 
 class AssetClassesAccessor:
@@ -24,7 +25,14 @@ class AssetClassesAccessor:
 
 class AssetsAccessor:
     def get_assets(
-        self, limit=None, offset=None, asset_classes=None, countries=None, tickers=None, search_text=None, order_by=None
+        self,
+        limit=None,
+        offset=None,
+        asset_classes=None,
+        countries=None,
+        tickers=None,
+        search_text=None,
+        order_by=None,
     ):
         qs = AssetsModel.objects.all()
         if asset_classes:
@@ -41,7 +49,9 @@ class AssetsAccessor:
         if tickers:
             qs = qs.filter(ticker__in=tickers)
         if search_text:
-            qs = qs.filter(Q(name__icontains=search_text) | Q(ticker__icontains=search_text))
+            qs = qs.filter(
+                Q(name__icontains=search_text) | Q(ticker__icontains=search_text)
+            )
         if order_by:
             qs = qs.order_by(*order_by)
         if limit is not None and offset is not None:
@@ -55,7 +65,9 @@ class AssetsAccessor:
         if countries:
             qs = qs.filter(country__id__in=countries)
         if search_text:
-            qs = qs.filter(Q(name__icontains=search_text) | Q(ticker__icontains=search_text))
+            qs = qs.filter(
+                Q(name__icontains=search_text) | Q(ticker__icontains=search_text)
+            )
         return qs.count()
 
     def get_asset_by_id(self, asset_id):

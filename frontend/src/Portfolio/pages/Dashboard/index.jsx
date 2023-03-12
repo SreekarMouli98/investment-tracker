@@ -1,4 +1,4 @@
-import { Col, Row } from "antd";
+import { Col, Row } from 'antd';
 
 import {
   AssetClassDiversification,
@@ -10,13 +10,13 @@ import {
   RiskReward,
   TotalAssets,
   UnrealizedProfits,
-} from "../../components/Stats";
+} from '../../components/Stats';
 
 function Dashboard() {
   return (
     <div
       style={{
-        padding: "20px",
+        padding: '20px',
       }}
     >
       <Row>

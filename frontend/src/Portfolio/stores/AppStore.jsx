@@ -1,9 +1,11 @@
-import { createContext, useContext } from "react";
-import { action, computed, makeObservable, observable } from "mobx";
+import { createContext, useContext } from 'react';
+import { action, computed, makeObservable, observable } from 'mobx';
 
 class AppStore {
   assetClasses = [];
+
   countries = [];
+
   baseAsset = null;
 
   constructor() {
@@ -26,41 +28,41 @@ class AppStore {
   };
 
   get assetClassesIdMap() {
-    let _map = {};
-    for (let assetClass of this.assetClasses) {
-      _map[assetClass.id] = assetClass;
-    }
-    return _map;
+    const res = {};
+    this.assetClasses.forEach((assetClass) => {
+      res[assetClass.id] = assetClass;
+    });
+    return res;
   }
 
   getAssetClassById = (id) => this.assetClassesIdMap[id];
 
   get assetClassesNamesMap() {
-    let _map = {};
-    for (let assetClass of this.assetClasses) {
-      _map[assetClass.name] = assetClass;
-    }
-    return _map;
+    const res = {};
+    this.assetClasses.forEach((assetClass) => {
+      res[assetClass.name] = assetClass;
+    });
+    return res;
   }
 
   getAssetClassByName = (name) => this.assetClassesNamesMap[name];
 
   get countriesIdMap() {
-    let _map = {};
-    for (let country of this.countries) {
-      _map[country.id] = country;
-    }
-    return _map;
+    const res = {};
+    this.countries.forEach((country) => {
+      res[country.id] = country;
+    });
+    return res;
   }
 
   getCountryById = (id) => this.countriesIdMap[id];
 
   get countriesCodesMap() {
-    let _map = {};
-    for (let country of this.countries) {
-      _map[country.code] = country;
-    }
-    return _map;
+    const res = {};
+    this.countries.forEach((country) => {
+      res[country.code] = country;
+    });
+    return res;
   }
 
   getCountryByCode = (code) => this.countriesCodesMap[code];
@@ -72,10 +74,10 @@ const AppStoreContext = createContext(defaultValue);
 
 export const useAppStore = () => useContext(AppStoreContext);
 
-export const AppStoreProvider = ({ children }) => {
+export function AppStoreProvider({ children }) {
   return (
     <AppStoreContext.Provider value={defaultValue}>
       {children}
     </AppStoreContext.Provider>
   );
-};
+}

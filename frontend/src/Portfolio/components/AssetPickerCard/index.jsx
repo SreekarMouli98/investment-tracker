@@ -1,8 +1,6 @@
-import { useMutation, useQuery } from "@apollo/client";
-import { observer } from "mobx-react-lite";
-import { debounce, isEmpty, map } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { DoubleLeftOutlined, DoubleRightOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import { useMutation, useQuery } from '@apollo/client';
 import {
   Button,
   Card,
@@ -17,42 +15,44 @@ import {
   Select,
   Spin,
   Tooltip,
-} from "antd";
+} from 'antd';
+import { debounce, isEmpty, map } from 'lodash';
+import { observer } from 'mobx-react-lite';
 
-import { ASSETS, CREATE_ASSET } from "../../services";
-import { useAppStore } from "../../stores/AppStore";
+import { ASSETS, CREATE_ASSET } from '../../services';
+import { useAppStore } from '../../stores/AppStore';
 
-import "./style.css";
+import './style.css';
 
 const LIMIT = 50;
 
-const FilterGroup = ({ groupName, options, selectedList, setSelectedList }) => {
+function FilterGroup({ groupName, options, selectedList, setSelectedList }) {
   const isAllSelected = selectedList.length === options.length;
   const isIndeterminate =
     selectedList.length > 0 && selectedList.length < options.length;
 
   const onToggleSelectAll = () => {
-    let _selectedList;
+    let newSelectedList;
     if (selectedList.length === options.length) {
-      _selectedList = [];
+      newSelectedList = [];
     } else {
-      _selectedList = map(options, "id");
+      newSelectedList = map(options, 'id');
     }
-    setSelectedList(_selectedList);
+    setSelectedList(newSelectedList);
   };
 
   const onToggleOption = (option) => {
-    let _selectedList;
+    let newSelectedList;
     if (selectedList.indexOf(option?.id) !== -1) {
-      _selectedList = selectedList.filter((item) => item !== option?.id);
+      newSelectedList = selectedList.filter((item) => item !== option?.id);
     } else {
-      _selectedList = [...selectedList, option?.id];
+      newSelectedList = [...selectedList, option?.id];
     }
-    setSelectedList(_selectedList);
+    setSelectedList(newSelectedList);
   };
 
   return (
-    <div style={{ padding: "10px" }}>
+    <div style={{ padding: '10px' }}>
       <Checkbox
         checked={isAllSelected}
         indeterminate={isIndeterminate}
@@ -72,7 +72,7 @@ const FilterGroup = ({ groupName, options, selectedList, setSelectedList }) => {
       ))}
     </div>
   );
-};
+}
 
 const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
   const appStore = useAppStore();
@@ -82,7 +82,7 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
   const [selectedCountries, setSelectedCountries] = useState([]);
   const [pageNo, setPageNo] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState('');
   const [createAssetModalVisible, setCreateAssetModalVisibility] =
     useState(false);
   const [newAssetForm] = Form.useForm();
@@ -93,13 +93,13 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
   const onToggleFilters = () => setFiltersExpanded(!filtersExpanded);
 
   const { loading, data, error, refetch } = useQuery(ASSETS, {
-    fetchPolicy: "no-cache",
+    fetchPolicy: 'no-cache',
     variables: {
       limit: LIMIT,
       offset: pageNo * LIMIT,
       assetClasses: selectedAssetClasses,
       countries: selectedCountries,
-      searchText: searchText,
+      searchText,
     },
     notifyOnNetworkStatusChange: true,
   });
@@ -108,20 +108,28 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
     /**
      * Set the assets list after receiving the graphql response for GET_ASSETS.
      */
-    setHasMore(true);
     if (!loading) {
       if (error) {
-        message.error("Unable to load assets! Please try again later!");
-        setHasMore(false);
-        return;
+        message.error('Unable to load assets! Please try again later!');
       } else if (data) {
-        setAssetsList([...assetsList, ...data?.assets]);
-        if (assetsList.length + data?.assets?.length >= data?.assetsCount) {
-          setHasMore(false);
-        }
+        setAssetsList((prevAssetList) => [...prevAssetList, ...data.assets]);
       }
     }
   }, [loading, data, error]);
+
+  useEffect(() => {
+    /**
+     * Computing whether more assets can be loaded.
+     */
+    setHasMore(true);
+    if (!loading) {
+      if (error) {
+        setHasMore(false);
+      } else if (data) {
+        setHasMore(assetsList.length < data?.assetsCount);
+      }
+    }
+  }, [loading, data, error, assetsList]);
 
   const onToggleCreateAssetModal = () => {
     newAssetForm.resetFields();
@@ -153,11 +161,11 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
       });
       if (node) scrollObserver.current.observe(node);
     },
-    [loading, hasMore, pageNo]
+    [loading, hasMore, pageNo],
   );
 
   return (
-    <Card style={{ width: filtersExpanded ? "600px" : "350px" }}>
+    <Card style={{ width: filtersExpanded ? '600px' : '350px' }}>
       <Row>
         <Col xs={filtersExpanded ? 12 : 24}>
           <Row>
@@ -189,12 +197,12 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                   onFinish={(values) =>
                     createAsset({
                       variables: values,
-                      onCompleted: (data) => {
+                      onCompleted: (res) => {
                         /**
                          * Reset & refetch the assets list after receiving the graphql response
                          * of CREATE_ASSET.
                          */
-                        if (data?.createAsset?.asset) {
+                        if (res?.createAsset?.asset) {
                           onToggleCreateAssetModal();
                           resetList();
                           refetch();
@@ -202,7 +210,7 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                       },
                       onError: () => {
                         message.error(
-                          "Unable to create asset! Please try again later!"
+                          'Unable to create asset! Please try again later!',
                         );
                       },
                     })
@@ -214,16 +222,16 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                     rules={[
                       {
                         required: true,
-                        message: "Please provide a ticker!",
+                        message: 'Please provide a ticker!',
                       },
                     ]}
                   >
                     <Input
-                      onInput={(e) =>
-                        (e.target.value = e.target.value
+                      onInput={(e) => {
+                        e.target.value = e.target.value
                           .toUpperCase()
-                          .replace(/[^0-9a-z_-]+/gi, ""))
-                      }
+                          .replace(/[^0-9a-z_-]+/gi, '');
+                      }}
                     />
                   </Form.Item>
                   <Form.Item
@@ -232,7 +240,7 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                     rules={[
                       {
                         required: true,
-                        message: "Please provide a name!",
+                        message: 'Please provide a name!',
                       },
                     ]}
                   >
@@ -244,7 +252,7 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                     rules={[
                       {
                         required: true,
-                        message: "Please select the asset class!",
+                        message: 'Please select the asset class!',
                       },
                     ]}
                   >
@@ -254,7 +262,7 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                         (assetClass) => ({
                           label: assetClass?.name,
                           value: assetClass?.id,
-                        })
+                        }),
                       )}
                       filterOption={(input, option) =>
                         option.label.toLowerCase().includes(input.toLowerCase())
@@ -287,8 +295,8 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
                   <List.Item
                     className={
                       selectedAsset?.id === asset?.id
-                        ? "asset-picker-list-item asset-picker-list-item-selected"
-                        : "asset-picker-list-item"
+                        ? 'asset-picker-list-item asset-picker-list-item-selected'
+                        : 'asset-picker-list-item'
                     }
                     onClick={() => setSelectedAsset(asset)}
                   >
@@ -320,7 +328,7 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
             />
             <FilterGroup
               groupName="Origin"
-              options={[...appStore.countries, { id: null, name: "None" }]}
+              options={[...appStore.countries, { id: null, name: 'None' }]}
               selectedList={selectedCountries}
               setSelectedList={(list) => {
                 resetList();
@@ -332,27 +340,30 @@ const AssetPickerCard = observer(({ preselectedAsset, onChange, onCancel }) => {
         <Col xs={24}>
           <br />
           <Button
-            style={{ float: "right" }}
+            style={{ float: 'right' }}
             disabled={isEmpty(selectedAsset)}
             onClick={() => onChange(selectedAsset)}
             type="primary"
           >
             Select
           </Button>
-          <Button style={{ float: "right" }} onClick={onCancel}>
+          <Button style={{ float: 'right' }} onClick={onCancel}>
             Cancel
           </Button>
         </Col>
       </Row>
       <Tooltip
-        title={filtersExpanded ? "Close Filters" : "More Filters"}
+        title={filtersExpanded ? 'Close Filters' : 'More Filters'}
         placement="left"
       >
-        <div className="close-filters-btn-wrapper" onClick={onToggleFilters}>
-          <div className="close-filters-btn">
-            {filtersExpanded ? <DoubleLeftOutlined /> : <DoubleRightOutlined />}
-          </div>
-        </div>
+        <Button
+          className="close-filters-btn"
+          type="text"
+          onClick={onToggleFilters}
+          icon={
+            filtersExpanded ? <DoubleLeftOutlined /> : <DoubleRightOutlined />
+          }
+        />
       </Tooltip>
     </Card>
   );

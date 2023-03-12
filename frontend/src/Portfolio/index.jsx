@@ -1,13 +1,17 @@
-import { useEffect } from "react";
-import { useQuery } from "@apollo/client";
-import { observer } from "mobx-react-lite";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
+import { useEffect } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import {
+  ApolloClient,
+  ApolloProvider,
+  InMemoryCache,
+  useQuery,
+} from '@apollo/client';
+import { observer } from 'mobx-react-lite';
 
-import { Dashboard, Holdings, Integrations, Ledger } from "./pages";
-import { APP_SEED_DATA } from "./services";
-import { AppHeader, Sidebar, PageLoading, UnexpectedError } from "./components";
-import { AppStoreProvider, useAppStore } from "./stores/AppStore";
+import { AppStoreProvider, useAppStore } from './stores/AppStore';
+import { AppHeader, PageLoading, Sidebar, UnexpectedError } from './components';
+import { Dashboard, Holdings, Integrations, Ledger } from './pages';
+import { APP_SEED_DATA } from './services';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
@@ -33,22 +37,18 @@ function AppWrapper() {
 const Portfolio = observer(() => {
   const appStore = useAppStore();
   const { loading, data, error } = useQuery(APP_SEED_DATA, {
-    fetchPolicy: "no-cache",
+    fetchPolicy: 'no-cache',
   });
 
   useEffect(() => {
-    if (!loading) {
-      if (error) {
-        return;
-      } else if (data) {
-        appStore.setSeedData(data);
-      }
+    if (!loading && !error && data) {
+      appStore.setSeedData(data);
     }
-  }, [loading, data, error]);
+  }, [loading, data, error, appStore]);
 
   if (loading) {
     return (
-      <div style={{ height: "100vh" }}>
+      <div style={{ height: '100vh' }}>
         <PageLoading />
       </div>
     );
@@ -56,7 +56,7 @@ const Portfolio = observer(() => {
 
   if (error) {
     return (
-      <div style={{ height: "100vh" }}>
+      <div style={{ height: '100vh' }}>
         <UnexpectedError />
       </div>
     );
@@ -65,23 +65,23 @@ const Portfolio = observer(() => {
   return (
     <div
       style={{
-        position: "fixed",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "#121212",
-        color: "white",
+        position: 'fixed',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#121212',
+        color: 'white',
       }}
     >
       <AppHeader />
       <Sidebar />
       <div
         style={{
-          position: "absolute",
-          top: "70px",
-          left: "80px",
-          width: "calc(100% - 80px)",
-          height: "calc(100% - 70px)",
-          overflowY: "auto",
+          position: 'absolute',
+          top: '70px',
+          left: '80px',
+          width: 'calc(100% - 80px)',
+          height: 'calc(100% - 70px)',
+          overflowY: 'auto',
         }}
       >
         <Routes>

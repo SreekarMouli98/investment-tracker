@@ -1,81 +1,78 @@
-import { useState } from "react";
-import { Button, Layout, Menu } from "antd";
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ApiOutlined,
   DollarCircleOutlined,
   FileTextOutlined,
   PieChartOutlined,
-} from "@ant-design/icons";
-import { useLocation, useNavigate } from "react-router-dom";
+} from '@ant-design/icons';
+import { Button, Layout, Menu } from 'antd';
 
-import "./styles.css";
-import { useEffect } from "react";
+import './styles.css';
 
 const { Sider } = Layout;
 
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState('');
   const [collapsed, setCollapsed] = useState(true);
 
   const menuOptions = [
     {
-      key: "holdings",
-      label: "Holdings",
+      key: 'holdings',
+      label: 'Holdings',
       icon: <PieChartOutlined />,
     },
     {
-      key: "ledger",
-      label: "Ledger",
+      key: 'ledger',
+      label: 'Ledger',
       icon: <FileTextOutlined />,
     },
     {
-      key: "integrations",
-      label: "Integrations",
+      key: 'integrations',
+      label: 'Integrations',
       icon: <ApiOutlined />,
     },
   ];
 
   useEffect(() => {
-    if (location.pathname.startsWith("/holdings")) {
-      setSelected("holdings");
-    } else if (location.pathname.startsWith("/ledger")) {
-      setSelected("ledger");
-    } else if (location.pathname.startsWith("/integrations")) {
-      setSelected("integrations");
+    if (location.pathname.startsWith('/holdings')) {
+      setSelected('holdings');
+    } else if (location.pathname.startsWith('/ledger')) {
+      setSelected('ledger');
+    } else if (location.pathname.startsWith('/integrations')) {
+      setSelected('integrations');
     }
   }, [location]);
 
   return (
-    <>
-      <Sider
-        className="app-sidebar"
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-      >
-        <div>
-          <Button
-            icon={<DollarCircleOutlined />}
-            type="link"
-            block
-            style={{ height: "64px", marginBottom: "10px" }}
-            onClick={() => navigate("/")}
-          />
-        </div>
-        <Menu
-          className="app-sidebar-menu"
-          mode="inline"
-          items={menuOptions}
-          selectedKeys={[selected]}
-          onSelect={({ key }) => {
-            setSelected(key);
-            navigate(`/${key}`);
-          }}
+    <Sider
+      className="app-sidebar"
+      collapsible
+      collapsed={collapsed}
+      onCollapse={setCollapsed}
+    >
+      <div>
+        <Button
+          icon={<DollarCircleOutlined />}
+          type="link"
+          block
+          style={{ height: '64px', marginBottom: '10px' }}
+          onClick={() => navigate('/')}
         />
-      </Sider>
-    </>
+      </div>
+      <Menu
+        className="app-sidebar-menu"
+        mode="inline"
+        items={menuOptions}
+        selectedKeys={[selected]}
+        onSelect={({ key }) => {
+          setSelected(key);
+          navigate(`/${key}`);
+        }}
+      />
+    </Sider>
   );
 }
 

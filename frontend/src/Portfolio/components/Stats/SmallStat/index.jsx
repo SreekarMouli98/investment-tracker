@@ -1,35 +1,35 @@
-import { CaretDownOutlined, CaretUpOutlined } from "@ant-design/icons";
-import { Card, Col, Row, Typography } from "antd";
-import AnimatedNumbers from "react-animated-numbers";
+import AnimatedNumbers from 'react-animated-numbers';
+import { CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
+import { Card, Col, Row, Typography } from 'antd';
 
-import StatHeading from "../StatHeading";
+import StatHeading from '../StatHeading';
 
-const SmallStat = ({
+function SmallStat({
   title,
   value,
   isCurrency = false,
-  currencyLocale = "en-IN",
-  prefix = "",
-  suffix = "",
+  currencyLocale = 'en-IN',
+  prefix = '',
+  suffix = '',
   isChanged = false,
   changedBy,
   positiveChange = true,
-}) => {
+}) {
   return (
     <Card
       style={{
-        margin: "10px",
+        margin: '10px',
       }}
     >
       <Row align="middle">
         <Col span={24}>
           <StatHeading text={title} />
         </Col>
-        <Col style={{ fontSize: "24px", fontWeight: "bolder" }}>
+        <Col style={{ fontSize: '24px', fontWeight: 'bolder' }}>
           <Row>
             {prefix && <Col>{prefix}</Col>}
             <Col>
-              {typeof value == "number" ? (
+              {typeof value === 'number' ? (
                 <AnimatedNumbers
                   includeComma={isCurrency}
                   animateToNumber={value}
@@ -40,7 +40,7 @@ const SmallStat = ({
                     { mass: 2, tension: 140, friction: 40 },
                     { mass: 3, tension: 130, friction: 40 },
                   ]}
-                ></AnimatedNumbers>
+                />
               ) : (
                 <Typography>{value}</Typography>
               )}
@@ -52,10 +52,10 @@ const SmallStat = ({
           <Col>
             <Typography
               style={{
-                fontSize: "12px",
-                fontWeight: "bolder",
-                color: positiveChange ? "green" : "red",
-                padding: "5px",
+                fontSize: '12px',
+                fontWeight: 'bolder',
+                color: positiveChange ? 'green' : 'red',
+                padding: '5px',
               }}
             >
               {positiveChange ? <CaretUpOutlined /> : <CaretDownOutlined />}
@@ -66,6 +66,6 @@ const SmallStat = ({
       </Row>
     </Card>
   );
-};
+}
 
 export default SmallStat;

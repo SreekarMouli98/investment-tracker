@@ -1,9 +1,9 @@
-import { Typography } from "antd";
+import { Typography } from 'antd';
 
-const StatHeading = ({ text }) => {
+function StatHeading({ text }) {
   return (
-    <Typography style={{ fontSize: "16px", color: "grey" }}>{text}</Typography>
+    <Typography style={{ fontSize: '16px', color: 'grey' }}>{text}</Typography>
   );
-};
+}
 
 export default StatHeading;

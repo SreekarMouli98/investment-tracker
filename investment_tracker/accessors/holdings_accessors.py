@@ -4,7 +4,15 @@ from investment_tracker.models import HoldingsModel
 
 
 class HoldingsAccessor:
-    def get_holdings(self, after_date=None, id_only=False, latest=False, limit=None, offset=None, order_by=None):
+    def get_holdings(
+        self,
+        after_date=None,
+        id_only=False,
+        latest=False,
+        limit=None,
+        offset=None,
+        order_by=None,
+    ):
         qs = HoldingsModel.objects.filter()
         if after_date:
             qs = qs.filter(date__gte=after_date)

@@ -1,12 +1,9 @@
-import ScatterPlot from "./ScatterPlot";
-import SwarmPlot from "./SwarmPlot";
+import ScatterPlot from './ScatterPlot';
 
-const getRand = (min, max) => Math.ceil(Math.random() * (max - min)) + min;
-
-const RiskReward = () => {
-  let data = [
+function RiskReward() {
+  const data = [
     {
-      id: "test",
+      id: 'test',
       data: [
         {
           x: 0,
@@ -38,7 +35,7 @@ const RiskReward = () => {
   ];
 
   const axisFormatter = (num) =>
-    ["Very Low", "Low", "Medium", "High", "Very High"][num] || "";
+    ['Very Low', 'Low', 'Medium', 'High', 'Very High'][num] || '';
 
   return (
     <ScatterPlot
@@ -48,6 +45,6 @@ const RiskReward = () => {
       yAxisFormatter={axisFormatter}
     />
   );
-};
+}
 
 export default RiskReward;

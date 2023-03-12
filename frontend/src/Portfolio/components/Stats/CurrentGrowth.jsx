@@ -1,18 +1,18 @@
-import SmallStat from "./SmallStat";
+import SmallStat from './SmallStat';
 
-const CurrentGrowth = () => {
-  let value = 25;
-  let suffix = "%";
+function CurrentGrowth() {
+  const value = 25;
+  const suffix = '%';
 
   return (
     <SmallStat
       title="Current Growth"
       value={value}
       suffix={suffix}
-      isChanged={true}
+      isChanged
       changedBy="2.37%"
     />
   );
-};
+}
 
 export default CurrentGrowth;

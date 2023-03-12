@@ -5,14 +5,21 @@ from investment_tracker.models.async_tasks_models import AsyncTasksModel
 
 
 class AsyncTasksService:
-    def create_async_task(self, task_name, status=AsyncTasksModel.Statuses.PENDING, percentage=0):
-        async_task = AsyncTasksModel(task_name=task_name, status=status, percentage=percentage)
+    def create_async_task(
+        self, task_name, status=AsyncTasksModel.Statuses.PENDING, percentage=0
+    ):
+        async_task = AsyncTasksModel(
+            task_name=task_name, status=status, percentage=percentage
+        )
         async_task = AsyncTasksAccessor().persist(async_task)
         return async_task.id
 
     def set_in_progress(self, async_task_id, percentage=1):
         AsyncTasksAccessor().update_async_task(
-            async_task_id, status=AsyncTasksModel.Statuses.IN_PROGRESS, started_at=timezone.now(), percentage=percentage
+            async_task_id,
+            status=AsyncTasksModel.Statuses.IN_PROGRESS,
+            started_at=timezone.now(),
+            percentage=percentage,
         )
 
     def update_progress(self, async_task_id, percentage):
@@ -32,5 +39,7 @@ class AsyncTasksService:
 
     def set_failed(self, async_task_id):
         AsyncTasksAccessor().update_async_task(
-            async_task_id, status=AsyncTasksModel.Statuses.FAILED, ended_at=timezone.now()
+            async_task_id,
+            status=AsyncTasksModel.Statuses.FAILED,
+            ended_at=timezone.now(),
         )

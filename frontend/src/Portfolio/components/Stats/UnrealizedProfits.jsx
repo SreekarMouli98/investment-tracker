@@ -1,22 +1,21 @@
-import { formatAssetValue } from "../../utils";
-import SmallStat from "./SmallStat";
+import SmallStat from './SmallStat';
 
-const UnrealizedProfits = () => {
-  let value = 100000;
-  let currencyLocale = "en-IN";
-  let prefix = "₹";
+function UnrealizedProfits() {
+  const value = 100000;
+  const currencyLocale = 'en-IN';
+  const prefix = '₹';
 
   return (
     <SmallStat
       title="Unrealized Profits"
       value={value}
-      isCurrency={true}
+      isCurrency
       currencyLocale={currencyLocale}
       prefix={prefix}
-      isChanged={true}
+      isChanged
       changedBy="2.37%"
     />
   );
-};
+}
 
 export default UnrealizedProfits;

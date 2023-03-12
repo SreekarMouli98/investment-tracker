@@ -1,21 +1,21 @@
-import SmallStat from "./SmallStat";
+import SmallStat from './SmallStat';
 
-const TotalHoldings = () => {
-  let value = 1000000;
-  let currencyLocale = "en-IN";
-  let prefix = "₹";
+function TotalHoldings() {
+  const value = 1000000;
+  const currencyLocale = 'en-IN';
+  const prefix = '₹';
 
   return (
     <SmallStat
       title="Networth"
       value={value}
-      isCurrency={true}
+      isCurrency
       currencyLocale={currencyLocale}
       prefix={prefix}
-      isChanged={true}
+      isChanged
       changedBy="2.37%"
     />
   );
-};
+}
 
 export default TotalHoldings;
