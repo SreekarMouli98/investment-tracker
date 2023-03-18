@@ -4,9 +4,9 @@ import {
   AssetClassDiversification,
   AssetsTreeMap,
   Cashflow,
-  CurrentGrowth,
-  Networth,
-  ProgressChart,
+  InvestedAmount,
+  NetworthGrowth,
+  PresentValue,
   RiskReward,
   TotalAssets,
   UnrealizedProfits,
@@ -21,10 +21,10 @@ function Dashboard() {
     >
       <Row>
         <Col md={12} lg={6}>
-          <Networth />
+          <InvestedAmount />
         </Col>
         <Col md={12} lg={6}>
-          <CurrentGrowth />
+          <PresentValue />
         </Col>
         <Col md={12} lg={6}>
           <UnrealizedProfits />
@@ -36,7 +36,7 @@ function Dashboard() {
           <AssetClassDiversification />
         </Col>
         <Col md={24} lg={12}>
-          <ProgressChart />
+          <NetworthGrowth />
         </Col>
         <Col md={24} lg={12}>
           <Cashflow />

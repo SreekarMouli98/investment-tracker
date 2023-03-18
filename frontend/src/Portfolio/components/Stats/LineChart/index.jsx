@@ -1,9 +1,14 @@
 import { ResponsiveLine } from '@nivo/line';
 import { Card, Col, Row } from 'antd';
+import { isEmpty } from 'lodash';
 
+import { useAppStore } from '../../../stores/AppStore';
+import NoData from '../../NoData';
+import PageLoading from '../../PageLoading';
 import StatHeading from '../StatHeading';
+import StatTooltip from '../StatTooltip';
 
-function MyResponsiveLine({ data /* see data tab */ }) {
+function MyResponsiveLine({ data, renderTooltip = undefined }) {
   return (
     <ResponsiveLine
       data={data}
@@ -91,11 +96,14 @@ function MyResponsiveLine({ data /* see data tab */ }) {
       enableGridX={false}
       enableGridY={false}
       crosshairType="cross"
+      tooltip={renderTooltip}
     />
   );
 }
 
-function LineChart({ title, data }) {
+function LineChart({ title, data, loading }) {
+  const appStore = useAppStore();
+  const { baseAsset } = appStore;
   return (
     <Card
       style={{
@@ -113,7 +121,27 @@ function LineChart({ title, data }) {
               color: 'black',
             }}
           >
-            <MyResponsiveLine data={data} />
+            {(() => {
+              if (loading) {
+                return <PageLoading />;
+              }
+              if (isEmpty(data)) {
+                return <NoData />;
+              }
+              return (
+                <MyResponsiveLine
+                  data={data}
+                  renderTooltip={({ point }) => (
+                    <StatTooltip
+                      title={point.data.x}
+                      value={point.data.y}
+                      assetClass={baseAsset?.assetClass?.name}
+                      country={baseAsset?.country?.code}
+                    />
+                  )}
+                />
+              );
+            })()}
           </div>
         </Col>
       </Row>

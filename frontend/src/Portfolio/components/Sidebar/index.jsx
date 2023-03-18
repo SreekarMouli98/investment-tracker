@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  ApiOutlined,
+  DatabaseOutlined,
+  DeploymentUnitOutlined,
   DollarCircleOutlined,
-  FileTextOutlined,
-  PieChartOutlined,
+  GoldOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu } from 'antd';
 
@@ -20,29 +21,38 @@ function Sidebar() {
 
   const menuOptions = [
     {
+      key: 'dashboard',
+      label: 'Dashboard',
+      icon: <LineChartOutlined />,
+    },
+    {
       key: 'holdings',
       label: 'Holdings',
-      icon: <PieChartOutlined />,
+      icon: <GoldOutlined />,
     },
     {
       key: 'ledger',
       label: 'Ledger',
-      icon: <FileTextOutlined />,
+      icon: <DatabaseOutlined />,
     },
     {
       key: 'integrations',
       label: 'Integrations',
-      icon: <ApiOutlined />,
+      icon: <DeploymentUnitOutlined />,
     },
   ];
 
   useEffect(() => {
-    if (location.pathname.startsWith('/holdings')) {
+    if (location.pathname.startsWith('/dashboard')) {
+      setSelected('dashboard');
+    } else if (location.pathname.startsWith('/holdings')) {
       setSelected('holdings');
     } else if (location.pathname.startsWith('/ledger')) {
       setSelected('ledger');
     } else if (location.pathname.startsWith('/integrations')) {
       setSelected('integrations');
+    } else {
+      setSelected('');
     }
   }, [location]);
 

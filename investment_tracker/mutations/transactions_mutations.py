@@ -8,6 +8,7 @@ from investment_tracker.models.transactions_models import TransactionsModel
 from investment_tracker.schema.transactions_schema import TransactionsType
 from investment_tracker.services.assets_services import AssetClassesService
 from investment_tracker.services.async_tasks_services import AsyncTasksService
+from investment_tracker.utils.common_utils import start_of_day
 from investment_tracker.utils.transactions_utils import to_lower_denomination
 
 
@@ -35,6 +36,7 @@ class CreateTransactionMutation(graphene.Mutation):
         transacted_at,
     ):
         base_asset_class = AssetClassesService().get_asset_class_by_name("Currency")
+        transacted_at = start_of_day(transacted_at)
         transaction = TransactionsModel(
             supply_asset_id=supply_asset_id,
             supply_value=to_lower_denomination(supply_value, asset_id=supply_asset_id),
@@ -84,6 +86,7 @@ class UpdateTransactionMutation(graphene.Mutation):
         transacted_at,
     ):
         base_asset_class = AssetClassesService().get_asset_class_by_name("Currency")
+        transacted_at = start_of_day(transacted_at)
         TransactionsAccessor().update_transaction(
             transaction_id,
             supply_asset_id=supply_asset_id,

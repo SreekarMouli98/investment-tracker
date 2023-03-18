@@ -1,30 +1,21 @@
+import { useQuery } from '@apollo/client';
+
+import { GET_ASSET_CLASS_DIVERSIFICATION } from '../../services';
+
 import PieChart from './PieChart';
 
 function AssetClassDiversification() {
-  const data = [
-    {
-      id: 'Crypto',
-      name: 'Crypto',
-      value: 100000,
-    },
-    {
-      id: 'Indian Stocks',
-      name: 'Indian Stocks',
-      value: 700000,
-    },
-    {
-      id: 'US Stocks',
-      name: 'US Stocks',
-      value: 400000,
-    },
-    {
-      id: 'Bonds',
-      name: 'Bonds',
-      value: 100000,
-    },
-  ];
+  const { loading, data } = useQuery(GET_ASSET_CLASS_DIVERSIFICATION, {
+    fetchPolicy: 'no-cache',
+  });
 
-  return <PieChart title="Asset Class Diversification" data={data} />;
+  return (
+    <PieChart
+      title="Asset Class Diversification"
+      data={data?.assetClassDiversification || []}
+      loading={loading}
+    />
+  );
 }
 
 export default AssetClassDiversification;

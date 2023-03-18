@@ -63,6 +63,7 @@ function MyResponsiveScatterPlotCanvas({
       }}
       enableGridX={false}
       enableGridY={false}
+      isInteractive={false}
     />
   );
 }
@@ -88,6 +89,7 @@ function ScatterPlot({
             style={{
               height: '400px',
               color: 'black',
+              filter: 'blur(3px)',
             }}
           >
             <MyResponsiveScatterPlotCanvas

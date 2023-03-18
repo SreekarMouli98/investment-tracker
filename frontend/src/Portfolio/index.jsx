@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import {
   ApolloClient,
   ApolloProvider,
@@ -85,7 +85,8 @@ const Portfolio = observer(() => {
         }}
       >
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/holdings" element={<Holdings />} />
           <Route path="/ledger" element={<Ledger />} />
           <Route path="/integrations" element={<Integrations />} />

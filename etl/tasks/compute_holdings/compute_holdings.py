@@ -22,8 +22,8 @@ class ComputeHoldingsETL(ETL):
         depricate_holdings = HoldingsAccessor().get_holdings(
             after_date=start_date, id_only=True
         )
-        previous_holdings = HoldingsAccessor().get_latest_holding_before_date(
-            start_date
+        previous_holdings = HoldingsAccessor().get_holdings(
+            latest_before_date=start_date
         )
         transactions_from_start_date = TransactionsAccessor().get_transactions(
             after_date=start_date, order_by=["transacted_at"]

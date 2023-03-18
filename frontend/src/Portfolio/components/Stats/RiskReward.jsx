@@ -39,7 +39,7 @@ function RiskReward() {
 
   return (
     <ScatterPlot
-      title="Risk Reward"
+      title="Risk Reward (Coming soon)"
       data={data}
       xAxisFormatter={axisFormatter}
       yAxisFormatter={axisFormatter}

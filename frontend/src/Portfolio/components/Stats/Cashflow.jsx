@@ -57,7 +57,14 @@ function Cashflow() {
       Wazirx: 50005.73,
     },
   ];
-  return <BarChart title="Cashflow" data={data} indexBy="date" keys={keys} />;
+  return (
+    <BarChart
+      title="Cashflow (Coming soon)"
+      data={data}
+      indexBy="date"
+      keys={keys}
+    />
+  );
 }
 
 export default Cashflow;

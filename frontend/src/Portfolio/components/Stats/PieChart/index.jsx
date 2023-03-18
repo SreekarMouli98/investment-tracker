@@ -1,17 +1,27 @@
 import { ResponsivePie } from '@nivo/pie';
 import { Card, Col, Row } from 'antd';
+import { isEmpty } from 'lodash';
 
+import { useAppStore } from '../../../stores/AppStore';
+import NoData from '../../NoData';
+import PageLoading from '../../PageLoading';
 import StatHeading from '../StatHeading';
+import StatTooltip from '../StatTooltip';
 
-function MyResponsivePie({ data }) {
+function MyResponsivePie({
+  data,
+  renderLabel = undefined,
+  renderTooltip = undefined,
+}) {
   return (
     <ResponsivePie
       data={data}
       margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
       innerRadius={0.5}
-      padAngle={0.7}
+      padAngle={2}
       cornerRadius={3}
-      activeOuterRadiusOffset={8}
+      activeInnerRadiusOffset={10}
+      activeOuterRadiusOffset={10}
       borderWidth={1}
       borderColor={{
         from: 'color',
@@ -24,7 +34,7 @@ function MyResponsivePie({ data }) {
       arcLabelsSkipAngle={10}
       arcLabelsTextColor={{
         from: 'color',
-        modifiers: [['darker', 2]],
+        modifiers: [['darker', 3]],
       }}
       legends={[
         {
@@ -69,11 +79,16 @@ function MyResponsivePie({ data }) {
           },
         },
       }}
+      tooltip={renderTooltip}
+      arcLabel={renderLabel}
     />
   );
 }
 
-function PieChart({ title, data }) {
+function PieChart({ title, data, loading }) {
+  const appStore = useAppStore();
+  const { baseAsset } = appStore;
+
   return (
     <Card
       style={{
@@ -91,7 +106,30 @@ function PieChart({ title, data }) {
               color: 'black',
             }}
           >
-            <MyResponsivePie data={data} />
+            {(() => {
+              if (loading) {
+                return <PageLoading />;
+              }
+              if (isEmpty(data)) {
+                return <NoData />;
+              }
+              return (
+                <MyResponsivePie
+                  data={data}
+                  renderLabel={(item) => {
+                    return `${item.data.percentage.toFixed(0)}%`;
+                  }}
+                  renderTooltip={({ datum }) => (
+                    <StatTooltip
+                      title={datum.id}
+                      value={datum.value}
+                      assetClass={baseAsset?.assetClass?.name}
+                      country={baseAsset?.country?.code}
+                    />
+                  )}
+                />
+              );
+            })()}
           </div>
         </Col>
       </Row>

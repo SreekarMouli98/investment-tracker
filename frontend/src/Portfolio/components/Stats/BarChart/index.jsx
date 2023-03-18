@@ -92,6 +92,7 @@ function MyResponsiveBar({ data /* see data tab */, indexBy, keys }) {
       }}
       enableLabel={false}
       enableGridY={false}
+      isInteractive={false}
     />
   );
 }
@@ -112,6 +113,7 @@ function BarChart({ title, data, indexBy, keys }) {
             style={{
               height: '400px',
               color: 'black',
+              filter: 'blur(3px)',
             }}
           >
             <MyResponsiveBar data={data} indexBy={indexBy} keys={keys} />
