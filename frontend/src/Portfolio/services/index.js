@@ -240,3 +240,33 @@ export const GET_HOLDINGS_PAGINATED = gql`
     holdingsCount
   }
 `;
+
+export const GET_INVESTED_AMOUNT = gql`
+  query getInvestedAmount {
+    investedAmount
+  }
+`;
+
+export const GET_TOTAL_ASSETS = gql`
+  query getTotalAssets {
+    totalAssets
+  }
+`;
+
+export const GET_ASSET_CLASS_DIVERSIFICATION = gql`
+  query getAssetClassDiversification {
+    assetClassDiversification
+  }
+`;
+
+export const GET_NETWORTH_GROWTH = gql`
+  query getNetworthGrowth {
+    networthGrowth
+  }
+`;
+
+export const GET_ASSETS_TREE_MAP = gql`
+  query getAssetsTreeMap {
+    assetsTreeMap
+  }
+`;

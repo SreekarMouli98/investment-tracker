@@ -39,6 +39,12 @@ def calculate_average_buy(
     return (prev_total_amt + transacted_amt) / (prev_holding_val + transacted_val)
 
 
+def calculate_change_rate(current_val, previous_val):
+    if not previous_val:
+        return 0
+    return (current_val - previous_val) / previous_val * 100
+
+
 def get_base_asset():
     """Temporary function to get the base asset"""
     return AssetsAccessor().get_assets(tickers=["INR"])[0]

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import {
   ApolloClient,
   ApolloProvider,
@@ -10,7 +10,7 @@ import { observer } from 'mobx-react-lite';
 
 import { AppStoreProvider, useAppStore } from './stores/AppStore';
 import { AppHeader, PageLoading, Sidebar, UnexpectedError } from './components';
-import { Holdings, Integrations, Ledger } from './pages';
+import { Dashboard, Holdings, Integrations, Ledger } from './pages';
 import { APP_SEED_DATA } from './services';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
@@ -85,6 +85,8 @@ const Portfolio = observer(() => {
         }}
       >
         <Routes>
+          <Route path="/" element={<Navigate to="dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/holdings" element={<Holdings />} />
           <Route path="/ledger" element={<Ledger />} />
           <Route path="/integrations" element={<Integrations />} />
