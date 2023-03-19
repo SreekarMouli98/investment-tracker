@@ -10,5 +10,5 @@ class AsyncTasksType(DjangoObjectType):
 
     meta_data = GenericScalar()
 
-    def resolve_meta_data(self, info):
+    def resolve_meta_data(self, _):
         return self.meta_data

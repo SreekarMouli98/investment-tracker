@@ -50,12 +50,12 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
         """Extracts data from Wazirx Tradebook xlsx"""
         logger.info("[Import Transactions ETL]: Wazirx -> Extract -> Begin")
         data = BytesIO(decode_base64_data(source_data))
-        wb = load_workbook(filename=data, read_only=True)
-        exchange_trades_sheet = wb["Exchange Trades"]
+        workbook = load_workbook(filename=data, read_only=True)
+        exchange_trades_sheet = workbook["Exchange Trades"]
         i = 2
         rows = []
         while True:
-            if exchange_trades_sheet.cell(row=i, column=1).value == None:
+            if exchange_trades_sheet.cell(row=i, column=1).value is None:
                 break
             row = []
             for j in range(len(EXCHANGE_TRADES_TABLE_COLS.keys())):
@@ -65,11 +65,11 @@ class ImportTransactionsFromWazirxETL(LoadMixin, ETL):
         exchange_trades_df = pd.DataFrame(
             rows, columns=list(EXCHANGE_TRADES_TABLE_COLS.values())
         )
-        p2p_trades_sheet = wb["P2P Trades"]
+        p2p_trades_sheet = workbook["P2P Trades"]
         i = 2
         rows = []
         while True:
-            if p2p_trades_sheet.cell(row=i, column=1).value == None:
+            if p2p_trades_sheet.cell(row=i, column=1).value is None:
                 break
             row = []
             for j in range(len(P2P_TRADES_TABLE_COLS.keys())):

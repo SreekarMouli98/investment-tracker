@@ -20,34 +20,38 @@ class LoadMixin:
         logger.info("[Import Transactions ETL]: Load -> Begin")
         assets = transformed_data.get("assets", [])
         logger.info(
-            f"[Import Transactions ETL]: Load -> Inserting {len(assets)} new assets"
+            "[Import Transactions ETL]: Load -> Inserting %d new assets", len(assets)
         )
         AssetsModel.objects.bulk_create(assets)
         transactions = transformed_data.get("transactions", [])
         logger.info(
-            f"[Import Transactions ETL]: Load -> Inserting {len(transactions)} new transactions"
+            "[Import Transactions ETL]: Load -> Inserting %d new transactions",
+            len(transactions),
         )
         TransactionsModel.objects.bulk_create(transactions)
         conversion_rates = transformed_data.get("conversion_rates", [])
         logger.info(
-            f"[Import Transactions ETL]: Load -> Inserting {len(conversion_rates)} new conversion rates"
+            "[Import Transactions ETL]: Load -> Inserting %d new conversion rates",
+            len(conversion_rates),
         )
         ConversionRatesModel.objects.bulk_create(conversion_rates)
         oldest_transactions_date = timezone.now()
-        for transaction in transactions:
-            if transaction.transacted_at < oldest_transactions_date:
-                oldest_transactions_date = transaction.transacted_at
+        for each_transaction in transactions:
+            if each_transaction.transacted_at < oldest_transactions_date:
+                oldest_transactions_date = each_transaction.transacted_at
         failed_conversions = transformed_data.get("failed_conversions", [])
         warnings = None
         if failed_conversions:
             warnings = [
-                f"Couldn't determine conversion rates for transactions between {', '.join(failed_conversions)}! Please update them manually!"
+                "Couldn't determine conversion rates for transactions between %d!"
+                "Please update them manually!",
+                ", ".join(failed_conversions),
             ]
         async_task_id = AsyncTasksService().create_async_task(
             ASYNC_TASKS["COMPUTE_HOLDINGS"]
         )
         logger.info(
-            f"[Import Transactions ETL]: Load -> Triggering Compute Holdings ETL"
+            "[Import Transactions ETL]: Load -> Triggering Compute Holdings ETL"
         )
         compute_holdings_etl.delay(async_task_id, oldest_transactions_date)
         logger.info("[Import Transactions ETL]: Load -> End")

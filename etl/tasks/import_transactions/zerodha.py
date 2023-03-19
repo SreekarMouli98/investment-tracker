@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import logging
 from datetime import datetime
 from io import BytesIO
@@ -33,7 +34,8 @@ ZERODHA_TABLE_COLS = {
     "GROSS_RATE_TRADE_PRICE_PER_UNIT_RS": "Gross Rate / Trade Price Per Unit (Rs)",
     "BROKERAGE_PER_UNIT_RS": "Brokerage per Unit (Rs)",
     "NET_RATE_PER_UNIT_RS": "Net Rate per Unit (Rs)",
-    "CLOSING_RATE_PER_UNIT_ONLY_FOR_DERIVATIVES_RS": "Closing Rate per Unit (Only for Derivatives) (Rs)",
+    "CLOSING_RATE_PER_UNIT_ONLY_FOR_DERIVATIVES_RS": "Closing Rate per "
+    "Unit (Only for Derivatives) (Rs)",
     "NET_TOTAL_BEFORE_LEVIES_RS": "Net Total (Before Levies) (Rs)",
     "REMARKS": "Remarks",
     "ISIN": "ISIN",
@@ -46,17 +48,17 @@ class ImportTransactionsFromZerodhaETL(LoadMixin, ETL):
         """Extracts data from Zerodha Tradebook xlsx"""
         logger.info("[Import Transactions ETL]: Zerodha -> Extract -> Begin")
         data = BytesIO(decode_base64_data(source_data))
-        wb = load_workbook(filename=data, read_only=True)
+        workbook = load_workbook(filename=data, read_only=True)
         data = []
-        for sheetname in wb.sheetnames:
+        for sheetname in workbook.sheetnames:
             found_cols = False
             found_data = False
-            sheet = wb[sheetname]
+            sheet = workbook[sheetname]
             sheet_transactions = []
             for row in sheet.values:
                 if found_data and row[0] is None:
                     break
-                elif found_data:
+                if found_data:
                     sheet_transactions.append(row)
                 elif found_cols and not found_data:
                     found_data = True

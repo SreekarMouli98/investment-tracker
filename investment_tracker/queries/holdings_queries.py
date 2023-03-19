@@ -12,10 +12,10 @@ class HoldingsQuery(graphene.ObjectType):
     )
     holdings_count = graphene.Int()
 
-    def resolve_holdings(self, info, limit=None, offset=None):
+    def resolve_holdings(self, _, limit=None, offset=None):
         return HoldingsAccessor().get_holdings(
             latest=True, limit=limit, offset=offset, order_by=["asset__ticker"]
         )
 
-    def resolve_holdings_count(self, info):
+    def resolve_holdings_count(self, _):
         return HoldingsAccessor().count_holdings(latest=True)

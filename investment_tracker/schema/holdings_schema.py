@@ -14,19 +14,22 @@ class HoldingsType(DjangoObjectType):
     average_buy = graphene.Float()
     value_in_base = graphene.Float()
 
-    def resolve_value(self, info):
+    @staticmethod
+    def resolve_value(holding, _):
         return to_higher_denomination(
-            self.value, asset_class_instance=self.asset.asset_class
+            holding.value, asset_class_instance=holding.asset.asset_class
         )
 
-    def resolve_average_buy(self, info):
+    @staticmethod
+    def resolve_average_buy(holding, _):
         return to_higher_denomination(
-            self.average_buy,
+            holding.average_buy,
             asset_class_dict=AssetClassesService().get_asset_class_by_name("Currency"),
         )
 
-    def resolve_value_in_base(self, info):
+    @staticmethod
+    def resolve_value_in_base(holding, _):
         return to_higher_denomination(
-            self.value_in_base,
+            holding.value_in_base,
             asset_class_dict=AssetClassesService().get_asset_class_by_name("Currency"),
         )

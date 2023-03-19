@@ -11,16 +11,15 @@ class AsyncTasksQuery(graphene.ObjectType):
     tasks = graphene.List(AsyncTasksType, limit=graphene.Int(), offset=graphene.Int())
     tasks_count = graphene.Int()
 
-    def resolve_task_by_id_or_latest(self, info, task_id):
+    def resolve_task_by_id_or_latest(self, _, task_id):
         if task_id:
             return AsyncTasksAccessor().get_task_by_id(task_id)
-        else:
-            return AsyncTasksAccessor().get_latest_task()
+        return AsyncTasksAccessor().get_latest_task()
 
-    def resolve_tasks(self, info, limit=None, offset=None):
+    def resolve_tasks(self, _, limit=None, offset=None):
         return AsyncTasksAccessor().get_tasks(
             limit=limit, offset=offset, order_by=["-created_at"]
         )
 
-    def resolve_tasks_count(self, info):
+    def resolve_tasks_count(self, _):
         return AsyncTasksAccessor().count_tasks()

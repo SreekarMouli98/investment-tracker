@@ -36,7 +36,7 @@ def run(async_task_id: int, source: str, source_data: str) -> None:
         (warnings,) = etl_service.load(transformed_data)
         AsyncTasksService().set_completed(async_task_id, warnings=warnings)
     except Exception as ex:
-        logger.info("[Import Transactions ETL]: Exception -> " + str(ex))
+        logger.info("[Import Transactions ETL]: Exception -> %s", ex)
         traceback.print_exc()
         AsyncTasksService().set_failed(async_task_id)
     logger.info("[Import Transactions ETL]: END")

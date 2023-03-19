@@ -1,5 +1,4 @@
 import base64
-from io import BytesIO
 
 
 def decode_base64_data(encoded_data):

@@ -24,12 +24,12 @@ class AssetsQuery(graphene.ObjectType):
     )
     base_asset = graphene.Field(AssetsType)
 
-    def resolve_asset_classes(self, info):
+    def resolve_asset_classes(self, _):
         return AssetClassesAccessor().get_asset_classes()
 
     def resolve_assets(
         self,
-        info,
+        _,
         limit=None,
         offset=None,
         asset_classes=None,
@@ -46,7 +46,7 @@ class AssetsQuery(graphene.ObjectType):
         )
 
     def resolve_assets_count(
-        self, info, asset_classes=None, countries=None, search_text=None
+        self, _, asset_classes=None, countries=None, search_text=None
     ):
         return AssetsAccessor().count_assets(
             asset_classes=asset_classes,
@@ -54,5 +54,5 @@ class AssetsQuery(graphene.ObjectType):
             search_text=search_text,
         )
 
-    def resolve_base_asset(self, info):
+    def resolve_base_asset(self, _):
         return get_base_asset()

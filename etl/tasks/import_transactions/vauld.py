@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import logging
 from datetime import datetime
 from io import StringIO

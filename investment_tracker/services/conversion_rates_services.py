@@ -28,7 +28,7 @@ class ConversionRatesService:
         failed_conversions=None,
     ):
         logger.info(
-            f"Get conversion rate between {from_asset.ticker} and {to_asset.ticker}"
+            "Get conversion rate between %s and %s", from_asset.ticker, to_asset.ticker
         )
         date = timezone.now() if date is None else date
         new_conversion_rates = (
@@ -80,11 +80,11 @@ class ConversionRatesService:
                     "target": final_asset.ticker,
                     "symbols": crypto_asset.ticker,
                 }
-                res = requests.get(url=url, params=params)
+                res = requests.get(url=url, params=params, timeout=10)
                 data = res.json()
                 try:
                     if not data["success"]:
-                        raise Exception()
+                        raise RuntimeError("Unable to retrieve crypto conversion rate")
                     rate = to_lower_denomination(
                         data["rates"][crypto_asset.ticker], asset=final_asset
                     )
@@ -110,11 +110,11 @@ class ConversionRatesService:
                 "from": from_asset.ticker,
                 "to": to_asset.ticker,
             }
-            res = requests.get(url=url, params=params)
+            res = requests.get(url=url, params=params, timeout=10)
             data = res.json()
             try:
                 if data["status"] == "failed":
-                    raise Exception()
+                    raise RuntimeError("Unable to retrieve currency conversion rate")
                 rate = to_lower_denomination(
                     data["rates"][to_asset.ticker]["rate"], asset=to_asset
                 )
@@ -129,7 +129,10 @@ class ConversionRatesService:
             else:
                 ConversionRatesAccessor().persist(conv_rate)
         logger.info(
-            f"Get conversion rate between {from_asset.ticker} and {to_asset.ticker} = {rate}"
+            "Get conversion rate between %s and %s = %d",
+            from_asset.ticker,
+            to_asset.ticker,
+            rate,
         )
         return rate
 
@@ -137,7 +140,9 @@ class ConversionRatesService:
         self, from_asset, to_asset, *args, cached_conversion_rates=None, **kwargs
     ):
         logger.info(
-            f"Get conversion rate cached between {from_asset.ticker} and {to_asset.ticker}"
+            "Get conversion rate cached between %s and %s",
+            from_asset.ticker,
+            to_asset.ticker,
         )
         cached_conversion_rates = (
             {} if cached_conversion_rates is None else cached_conversion_rates

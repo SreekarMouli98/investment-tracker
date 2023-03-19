@@ -1,3 +1,4 @@
+# pylint: disable=R0901
 import graphene
 
 from etl.queries import ETLQueries

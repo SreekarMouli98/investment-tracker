@@ -12,10 +12,10 @@ class TransactionsQuery(graphene.ObjectType):
     )
     transactions_count = graphene.Int()
 
-    def resolve_transactions(self, info, limit=None, offset=None):
+    def resolve_transactions(self, _, limit=None, offset=None):
         return TransactionsAccessor().get_transactions(
             limit=limit, offset=offset, order_by=["-transacted_at"]
         )
 
-    def resolve_transactions_count(self, info):
+    def resolve_transactions_count(self, _):
         return TransactionsAccessor().count_transactions()

@@ -10,7 +10,7 @@ class AnalyticsService:
     def get_invested_amount(self):
         res = {"value": 0, "change": 0}
         base_asset = get_base_asset()
-        current_invested_amount_sql = f"""
+        current_invested_amount_sql = """
             SELECT SUM(value_in_base::int)
             FROM holdings
             WHERE
@@ -19,7 +19,7 @@ class AnalyticsService:
                     FROM holdings
                 )
         """
-        previous_invested_amount_sql = f"""
+        previous_invested_amount_sql = """
             SELECT SUM(value_in_base::int)
             FROM holdings
             WHERE
@@ -59,7 +59,7 @@ class AnalyticsService:
 
     def get_total_assets(self):
         res = {"value": 0, "change": 0}
-        current_assets_count_sql = f"""
+        current_assets_count_sql = """
             SELECT COUNT(id)
             FROM holdings
             WHERE
@@ -68,7 +68,7 @@ class AnalyticsService:
                     FROM holdings
                 )
         """
-        previous_assets_count_sql = f"""
+        previous_assets_count_sql = """
             SELECT COUNT(id)
             FROM holdings
             WHERE

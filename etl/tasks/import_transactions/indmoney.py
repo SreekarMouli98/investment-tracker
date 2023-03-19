@@ -43,17 +43,17 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
         """Extracts data from INDMoney Tradebook xlsx"""
         logger.info("[Import Transactions ETL]: INDMoney -> Extract -> Begin")
         data = BytesIO(decode_base64_data(source_data))
-        wb = load_workbook(filename=data, read_only=True)
+        workbook = load_workbook(filename=data, read_only=True)
         data = []
-        for sheetname in wb.sheetnames:
+        for sheetname in workbook.sheetnames:
             found_cols = False
             found_data = False
-            sheet = wb[sheetname]
+            sheet = workbook[sheetname]
             sheet_transactions = []
             for row in sheet.values:
                 if found_data and row[0] is None:
                     break
-                elif found_data:
+                if found_data:
                     sheet_transactions.append(row)
                 elif found_cols and not found_data:
                     found_data = True
@@ -110,11 +110,13 @@ class ImportTransactionsFromINDMoneyETL(LoadMixin, ETL):
             assets_map[ticker] = asset
             new_assets.append(asset)
 
-        get_currency_used = (
-            lambda row: assets_map["USD"]
-            if asset_type_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]] == "US_STOCK"
-            else assets_map["INR"]
-        )
+        def get_currency_used(row):
+            return (
+                assets_map["USD"]
+                if asset_type_map[row[INDMONEY_TABLE_COLS["INVESTMENT_NAME"]]]
+                == "US_STOCK"
+                else assets_map["INR"]
+            )
 
         transactions_df["supply_asset"] = transactions_df.apply(
             lambda row: get_currency_used(row)

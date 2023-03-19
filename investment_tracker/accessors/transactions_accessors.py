@@ -1,6 +1,5 @@
-from django.utils import timezone
-
 from investment_tracker.models import TransactionsModel
+from investment_tracker.utils.db_utils import apply_limit_offset_order_by
 
 
 class TransactionsAccessor:
@@ -12,10 +11,7 @@ class TransactionsAccessor:
         qs = TransactionsModel.objects.filter()
         if after_date:
             qs = qs.filter(transacted_at__gte=after_date)
-        if order_by:
-            qs = qs.order_by(*order_by)
-        if offset is not None and limit is not None:
-            qs = qs[offset : offset + limit]
+        apply_limit_offset_order_by(qs, limit=limit, offset=offset, order_by=order_by)
         return list(qs)
 
     def get_transaction_by_id(self, transaction_id):

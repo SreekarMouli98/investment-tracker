@@ -7,5 +7,5 @@ from investment_tracker.schema.countries_schema import CountriesType
 class CountriesQuery(graphene.ObjectType):
     countries = graphene.List(CountriesType)
 
-    def resolve_countries(self, info):
+    def resolve_countries(self, _):
         return CountriesAccessor().get_countries()

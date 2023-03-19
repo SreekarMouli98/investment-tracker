@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 import os
 from pathlib import Path
 
+import django
+from django.utils.encoding import force_str
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,9 +22,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # TEMPORARY LOGIC TO BYPASS GRAPHENE ISSUE
 # https://stackoverflow.com/questions/70382084/import-error-force-text-from-django-utils-encoding
 #####
-import django
-from django.utils.encoding import force_str
-
 django.utils.encoding.force_text = force_str
 #####
 

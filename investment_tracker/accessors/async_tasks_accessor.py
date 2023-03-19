@@ -1,4 +1,5 @@
 from investment_tracker.models.async_tasks_models import AsyncTasksModel
+from investment_tracker.utils.db_utils import apply_limit_offset_order_by
 
 
 class AsyncTasksAccessor:
@@ -19,10 +20,7 @@ class AsyncTasksAccessor:
 
     def get_tasks(self, limit=None, offset=None, order_by=None):
         qs = AsyncTasksModel.objects.filter()
-        if order_by:
-            qs = qs.order_by(*order_by)
-        if offset is not None and limit is not None:
-            qs = qs[offset : offset + limit]
+        apply_limit_offset_order_by(qs, limit=limit, offset=offset, order_by=order_by)
         return list(qs)
 
     def count_tasks(self):

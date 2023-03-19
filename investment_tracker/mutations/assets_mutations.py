@@ -16,7 +16,7 @@ class CreateAssetClassMutation(graphene.Mutation):
 
     asset_class = graphene.Field(AssetClassesType)
 
-    def mutate(self, info, name, decimal_places):
+    def mutate(self, _, name, decimal_places):
         asset_class = AssetClassesModel(name=name, decimal_places=decimal_places)
         asset_class = AssetClassesAccessor().persist(asset_class)
         return CreateAssetClassMutation(asset_class=asset_class)
@@ -30,7 +30,7 @@ class UpdateAssetClassMutation(graphene.Mutation):
 
     ok = graphene.Boolean()
 
-    def mutate(self, info, asset_class_id, name, decimal_places):
+    def mutate(self, _, asset_class_id, name, decimal_places):
         AssetClassesAccessor().update_asset_class(
             asset_class_id, name=name, decimal_places=decimal_places
         )
@@ -43,11 +43,11 @@ class DeleteAssetClassMutation(graphene.Mutation):
 
     ok = graphene.Boolean()
 
-    def mutate(self, info, asset_class_id):
+    def mutate(self, _, asset_class_id):
         try:
             asset_class = AssetClassesAccessor().get_asset_class_by_id(asset_class_id)
-        except AssetClassesModel.DoesNotExist:
-            raise GraphQLError("Asset Class doesn't exist!")
+        except AssetClassesModel.DoesNotExist as ex:
+            raise GraphQLError("Asset Class doesn't exist!") from ex
         asset_class.delete()
         return DeleteAssetClassMutation(ok=True)
 
@@ -61,7 +61,7 @@ class CreateAssetMutation(graphene.Mutation):
 
     asset = graphene.Field(AssetsType)
 
-    def mutate(self, info, name, ticker, asset_class, country):
+    def mutate(self, _, name, ticker, asset_class, country):
         country = None if country == -1 else country
         asset = AssetsModel(
             name=name, ticker=ticker, asset_class_id=asset_class, country_id=country
@@ -80,7 +80,7 @@ class UpdateAssetMutation(graphene.Mutation):
 
     ok = graphene.Boolean()
 
-    def mutate(self, info, asset_id, name, ticker, asset_class, country):
+    def mutate(self, _, asset_id, name, ticker, asset_class, country):
         if not name or not ticker:
             raise GraphQLError("Invalid name!")
         AssetsAccessor().update_asset(
@@ -99,11 +99,11 @@ class DeleteAssetMutation(graphene.Mutation):
 
     ok = graphene.Boolean()
 
-    def mutate(self, info, asset_id):
+    def mutate(self, _, asset_id):
         try:
             asset = AssetsAccessor().get_asset_by_id(asset_id)
-        except AssetsModel.DoesNotExist:
-            raise GraphQLError("Asset doesn't exist!")
+        except AssetsModel.DoesNotExist as ex:
+            raise GraphQLError("Asset doesn't exist!") from ex
         asset.delete()
         return DeleteAssetMutation(ok=True)
 

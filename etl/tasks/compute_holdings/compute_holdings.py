@@ -16,8 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class ComputeHoldingsETL(ETL):
-    def extract(self, start_date):
+    def extract(self, source_data):
         logger.info("[Compute Holdings ETL]: Extract -> Begin")
+        start_date = source_data
         base_asset = get_base_asset()
         depricate_holdings = HoldingsAccessor().get_holdings(
             after_date=start_date, id_only=True
@@ -36,12 +37,12 @@ class ComputeHoldingsETL(ETL):
             "transactions_from_start_date": transactions_from_start_date,
         }
 
-    def transform(self, data):
+    def transform(self, extracted_data):
         logger.info("[Compute Holdings ETL]: Transform -> Begin")
-        base_asset = data["base_asset"]
-        depricate_holdings = data["depricate_holdings"]
-        previous_holdings = data["previous_holdings"]
-        transactions_from_start_date = data["transactions_from_start_date"]
+        base_asset = extracted_data["base_asset"]
+        depricate_holdings = extracted_data["depricate_holdings"]
+        previous_holdings = extracted_data["previous_holdings"]
+        transactions_from_start_date = extracted_data["transactions_from_start_date"]
         new_holdings = []
         holdings_map = defaultdict(
             lambda: {"value": decimal.Decimal(0), "average_buy": decimal.Decimal(0)}
@@ -52,17 +53,17 @@ class ComputeHoldingsETL(ETL):
                 holding.average_buy
             )
         transcations_date_map = defaultdict(list)
-        for transaction in transactions_from_start_date:
-            transcations_date_map[transaction.transacted_at].append(transaction)
+        for each_tansaction in transactions_from_start_date:
+            transcations_date_map[each_tansaction.transacted_at].append(each_tansaction)
         dates_in_order = sorted(list(transcations_date_map.keys()))
         for date in dates_in_order:
-            for transaction in transcations_date_map[date]:
-                supply_asset = transaction.supply_asset
-                supply_value = decimal.Decimal(transaction.supply_value)
-                receive_asset = transaction.receive_asset
-                receive_value = decimal.Decimal(transaction.receive_value)
+            for each_tansaction in transcations_date_map[date]:
+                supply_asset = each_tansaction.supply_asset
+                supply_value = decimal.Decimal(each_tansaction.supply_value)
+                receive_asset = each_tansaction.receive_asset
+                receive_value = decimal.Decimal(each_tansaction.receive_value)
                 receive_base_conv_rate = decimal.Decimal(
-                    transaction.receive_base_conv_rate
+                    each_tansaction.receive_base_conv_rate
                 )
                 holdings_map[supply_asset]["value"] -= supply_value
                 holdings_map[receive_asset]["average_buy"] = calculate_average_buy(
@@ -96,16 +97,18 @@ class ComputeHoldingsETL(ETL):
         }
 
     @transaction.atomic
-    def load(self, data):
+    def load(self, transformed_data):
         logger.info("[Compute Holdings ETL]: Load -> Start")
-        depricate_holdings = data["depricate_holdings"]
-        new_holdings = data["new_holdings"]
+        depricate_holdings = transformed_data["depricate_holdings"]
+        new_holdings = transformed_data["new_holdings"]
         logger.info(
-            f"[Compute Holdings ETL]: Load -> Deleting {len(depricate_holdings)} holdings"
+            "[Compute Holdings ETL]: Load -> Deleting %d holdings",
+            len(depricate_holdings),
         )
         HoldingsAccessor().delete_holdings_by_ids(depricate_holdings)
         logger.info(
-            f"[Compute Holdings ETL]: Load -> Inserting {len(new_holdings)} new holdings"
+            "[Compute Holdings ETL]: Load -> Inserting %d new holdings",
+            len(new_holdings),
         )
         HoldingsModel.objects.bulk_create(new_holdings)
         logger.info("[Compute Holdings ETL]: Load -> End")

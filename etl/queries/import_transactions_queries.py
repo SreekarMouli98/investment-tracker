@@ -12,7 +12,7 @@ class ImportTransactionsQuery(graphene.ObjectType):
         encoded_files=GenericScalar(required=True),
     )
 
-    def resolve_import_transactions(self, info, source, encoded_files):
+    def resolve_import_transactions(self, _, source, encoded_files):
         async_task_id = AsyncTasksService().create_async_task(
             ASYNC_TASKS["IMPORT_TRANSACTIONS"]
         )

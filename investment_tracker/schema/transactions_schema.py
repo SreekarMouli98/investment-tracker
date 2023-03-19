@@ -19,50 +19,60 @@ class TransactionsType(DjangoObjectType):
     supply_in_base = graphene.Float()
     receive_in_base = graphene.Float()
 
-    def resolve_supply_value(self, info):
+    @staticmethod
+    def resolve_supply_value(transaction, _):
         return to_higher_denomination(
-            self.supply_value, asset_class_instance=self.supply_asset.asset_class
+            transaction.supply_value,
+            asset_class_instance=transaction.supply_asset.asset_class,
         )
 
-    def resolve_receive_value(self, info):
+    @staticmethod
+    def resolve_receive_value(transaction, _):
         return to_higher_denomination(
-            self.receive_value, asset_class_instance=self.receive_asset.asset_class
+            transaction.receive_value,
+            asset_class_instance=transaction.receive_asset.asset_class,
         )
 
-    def resolve_supply_base_conv_rate(self, info):
-        if not self.supply_base_conv_rate:
+    @staticmethod
+    def resolve_supply_base_conv_rate(transaction, _):
+        if not transaction.supply_base_conv_rate:
             return 0
         return to_higher_denomination(
-            self.supply_base_conv_rate,
+            transaction.supply_base_conv_rate,
             asset_class_dict=AssetClassesService().get_asset_class_by_name("Currency"),
         )
 
-    def resolve_receive_base_conv_rate(self, info):
-        if not self.receive_base_conv_rate:
+    @staticmethod
+    def resolve_receive_base_conv_rate(transaction, _):
+        if not transaction.receive_base_conv_rate:
             return 0
         return to_higher_denomination(
-            self.receive_base_conv_rate,
+            transaction.receive_base_conv_rate,
             asset_class_dict=AssetClassesService().get_asset_class_by_name("Currency"),
         )
 
-    def resolve_supply_in_base(self, info):
-        if not self.supply_base_conv_rate:
+    @staticmethod
+    def resolve_supply_in_base(transaction, _):
+        if not transaction.supply_base_conv_rate:
             return 0
         return to_higher_denomination(
             to_higher_denomination(
-                self.supply_value, asset_class_instance=self.supply_asset.asset_class
+                transaction.supply_value,
+                asset_class_instance=transaction.supply_asset.asset_class,
             )
-            * decimal.Decimal(self.supply_base_conv_rate),
+            * decimal.Decimal(transaction.supply_base_conv_rate),
             asset_class_dict=AssetClassesService().get_asset_class_by_name("Currency"),
         )
 
-    def resolve_receive_in_base(self, info):
-        if not self.receive_base_conv_rate:
+    @staticmethod
+    def resolve_receive_in_base(transaction, _):
+        if not transaction.receive_base_conv_rate:
             return 0
         return to_higher_denomination(
             to_higher_denomination(
-                self.receive_value, asset_class_instance=self.receive_asset.asset_class
+                transaction.receive_value,
+                asset_class_instance=transaction.receive_asset.asset_class,
             )
-            * decimal.Decimal(self.receive_base_conv_rate),
+            * decimal.Decimal(transaction.receive_base_conv_rate),
             asset_class_dict=AssetClassesService().get_asset_class_by_name("Currency"),
         )

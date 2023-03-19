@@ -26,7 +26,7 @@ class CreateTransactionMutation(graphene.Mutation):
 
     def mutate(
         self,
-        info,
+        _,
         supply_asset_id,
         supply_value,
         supply_base_conv_rate,
@@ -75,7 +75,7 @@ class UpdateTransactionMutation(graphene.Mutation):
 
     def mutate(
         self,
-        info,
+        _,
         transaction_id,
         supply_asset_id,
         supply_value,
@@ -116,11 +116,11 @@ class DeleteTransactionMutation(graphene.Mutation):
 
     ok = graphene.Boolean()
 
-    def mutate(self, info, transaction_id):
+    def mutate(self, _, transaction_id):
         try:
             transaction = TransactionsAccessor().get_transaction_by_id(transaction_id)
-        except TransactionsModel.DoesNotExist:
-            raise GraphQLError("Transaction doesn't exist!")
+        except TransactionsModel.DoesNotExist as ex:
+            raise GraphQLError("Transaction doesn't exist!") from ex
         transaction.delete()
         async_task_id = AsyncTasksService().create_async_task(
             ASYNC_TASKS["COMPUTE_HOLDINGS"]
