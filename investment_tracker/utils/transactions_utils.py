@@ -47,4 +47,5 @@ def calculate_change_rate(current_val, previous_val):
 
 def get_base_asset():
     """Temporary function to get the base asset"""
-    return AssetsAccessor().get_assets(tickers=["INR"])[0]
+    assets = AssetsAccessor().get_assets(tickers=["INR"])
+    return assets[0] if assets else None
